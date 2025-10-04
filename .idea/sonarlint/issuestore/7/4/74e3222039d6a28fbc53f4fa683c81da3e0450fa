@@ -1,0 +1,17 @@
+
+	java:S112"FDefine and throw a dedicated exception instead of using a generic one.(¥öáÖúÿÿÿÿ8ÈÌÙØš3J$7a4ae650-cd43-47ec-a11c-36e2adc7011b
+‹
+java:S2095"HUse try-with-resources or close this "Connection" in a "finally" clause.(“…§Ú8÷ÑïØš3J$5f702504-b941-4851-84e8-bf8fe142fc57
+
+java:S2095"EUse try-with-resources or close this "Channel" in a "finally" clause.(‡î‰´ûÿÿÿÿ8÷ÑïØš3J$243dd02a-2e54-4faa-9f74-a35429d3bab3
+‚
+java:S1118	":Add a private constructor to hide the implicit public one.(ë­»§øÿÿÿÿ8ÖØš3J$820fd1fe-ad31-4dda-8da3-54874996015d
+
+java:S1124
+"EReorder the modifiers to comply with the Java Language Specification.(ô÷éƒşÿÿÿÿ8ŸÖØš3J$ecfa7634-d7d2-44cc-81f5-c79cf18c2990
+¶
+java:S1130"nRemove the declaration of thrown exception 'java.io.IOException' which is a subclass of 'java.lang.Exception'.(¥öáÖúÿÿÿÿ8ÖÌÙØš3J$2f0ef3cb-8b56-4eef-bffe-bfcad428eb86
+É
+java:S1130"€Remove the declaration of thrown exception 'java.util.concurrent.TimeoutException' which is a subclass of 'java.lang.Exception'.(¥öáÖúÿÿÿÿ8×ÌÙØš3J$b8a3cb2e-27a2-4e5a-a6f1-46df734834ff
+m	java:S106"+Replace this use of System.out by a logger.(Óéığ8‡ÒïØš3J$d6ca8cee-b9af-423b-a96e-daeb4e036e5e
+m	java:S106""+Replace this use of System.out by a logger.(èûçı8ŠÒïØš3J$127f1022-64a7-44d6-b7c1-3c7a7f187097

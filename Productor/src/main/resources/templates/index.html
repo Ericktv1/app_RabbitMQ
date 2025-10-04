@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Cliente · Crear pedido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root{
+          --bg:#0b1020;
+          --panel:#11183a;
+          --muted:#8ea2c8;
+          --text:#eaf1ff;
+          --brand:#6aa4ff;
+          --brand-2:#8ee3ff;
+          --ok:#19c37d;
+          --warn:#ffc857;
+          --danger:#ff6b6b;
+          --border:rgba(255,255,255,.12);
+          --shadow:0 12px 30px rgba(0,0,0,.35);
+          --radius:18px;
+        }
+        *{box-sizing:border-box}
+        html,body{height:100%}
+        body{
+          margin:0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+          background:linear-gradient(180deg,#0a0f23 0%,#0b1020 100%);
+          color:var(--text);
+          display:flex; flex-direction:column; gap:24px;
+        }
+        .container{max-width:1200px;margin:24px auto;padding:0 16px}
+        header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+        .title{font-size:28px;font-weight:800;letter-spacing:.2px}
+        .card{background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%);border:1px solid var(--border); border-radius:var(--radius);box-shadow:var(--shadow);}
+        .panel{padding:18px 18px}
+        .row{display:grid;grid-template-columns:1fr 320px; gap:18px}
+        @media (max-width:900px){ .row{grid-template-columns:1fr} }
+
+        .input{width:100%; background:#0c1330;border:1px solid var(--border); color:var(--text);padding:12px 14px;border-radius:12px;}
+        .muted{color:var(--muted);font-size:14px}
+
+        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+        @media (max-width:640px){ .grid{grid-template-columns:1fr} }
+        .prod{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;background:rgba(255,255,255,.03); border:1px solid var(--border);padding:14px; border-radius:14px;}
+        .prod h4{margin:0;font-size:16px}
+        .price{color:var(--brand-2);font-weight:700}
+        .qty{display:flex; align-items:center; gap:6px; background:#0b1230;border:1px solid var(--border); border-radius:12px; padding:4px;}
+        .qty button{width:32px; height:32px; border-radius:10px; border:1px solid var(--border);background:linear-gradient(180deg,#16245d,#0d1745); color:var(--text); cursor:pointer;}
+        .qty input{width:52px; text-align:center; border:none; background:transparent; color:var(--text); font-weight:700;}
+
+        .summary{position:sticky; top:16px;display:flex; flex-direction:column; gap:12px;}
+        .tot{display:flex; align-items:center; justify-content:space-between;padding:14px 16px; border:1px dashed var(--border); border-radius:14px;background:rgba(255,255,255,.03);font-weight:700;}
+        .btn{appearance:none; border:none; cursor:pointer; width:100%;padding:14px 16px; border-radius:14px; font-weight:800;letter-spacing:.3px;color:#071024; background:linear-gradient(180deg, var(--brand), #4d7fff);}
+        .alert{padding:12px 14px; border-radius:12px; font-weight:600}
+        .alert.info{background:rgba(106,164,255,.12); border:1px solid rgba(106,164,255,.35)}
+        .alert.ok{background:rgba(25,195,125,.12); border:1px solid rgba(25,195,125,.35)}
+        .alert.err{background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35)}
+        a.link{color:var(--brand-2)}
+
+        table{width:100%; border-collapse:collapse; border-radius:14px; margin-top:12px}
+        th,td{padding:12px 10px; border-bottom:1px solid var(--border)}
+        th{background:rgba(255,255,255,.04); text-align:left}
+        .right{text-align:right}
+        .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+        .btn-refresh{padding:8px 12px; font-size:14px; width:auto;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="title">🍽️ Realiza tu pedido</div>
+    </header>
+
+    <div class="row">
+        <section class="card">
+            <div class="panel">
+                <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px">
+                    <input id="customerName" class="input" placeholder="Tu nombre">
+                    <span class="muted">Ingresa tu nombre</span>
+                </div>
+                <div id="catalog" class="grid"></div>
+            </div>
+        </section>
+
+        <aside class="summary">
+            <div class="card panel">
+                <div class="muted">Resumen</div>
+                <div class="tot"><span>Total estimado</span><span id="est">$ 0</span></div>
+                <button id="send" class="btn">Enviar pedido</button>
+            </div>
+            <div id="result" class="alert info" style="display:none"></div>
+        </aside>
+    </div>
+
+    <section class="card" style="margin-top:24px">
+        <div class="panel">
+            <div class="toolbar">
+                <h2 style="margin:0">Mis Facturas</h2>
+                <button id="refreshInvoices" class="btn btn-refresh">Actualizar</button>
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Cliente</th>
+                    <th class="right">Subtotal</th>
+                    <th class="right">IVA (19%)</th>
+                    <th class="right">Total</th>
+                </tr>
+                </thead>
+                <tbody id="tbInvoices"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card" style="margin-top:24px">
+        <div class="panel">
+            <div class="toolbar">
+                <h2 style="margin:0">Notificaciones</h2>
+                <button id="refreshNotifications" class="btn btn-refresh">Actualizar</button>
+            </div>
+            <div id="notificationsList" style="display:flex; flex-direction:column; gap:12px; margin-top:12px"></div>
+        </div>
+    </section>
+</div>
+
+<script>
+    const fmtCOP = n => Number(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+    let catalog = {};
+
+    async function loadCatalog(){
+      const r = await fetch('/orders/catalog'); catalog = await r.json();
+      const wrap = document.getElementById('catalog'); wrap.innerHTML='';
+      Object.entries(catalog).forEach(([name, price]) => {
+        const el = document.createElement('div');
+        el.className='prod';
+        el.innerHTML = `
+          <div><h4>${name}</h4><div class="muted">Precio: <span class="price">${fmtCOP(price)}</span></div></div>
+          <div class="qty">
+            <button type="button" data-d="-1">-</button>
+            <input type="number" min="0" value="0" data-name="${name}">
+            <button type="button" data-d="1">+</button>
+          </div>
+        `;
+        const input = el.querySelector('input');
+        el.querySelectorAll('button').forEach(b=>{
+          b.addEventListener('click', ()=>{
+            const d = Number(b.dataset.d);
+            const v = Math.max(0, Number(input.value||0) + d);
+            input.value = v; updateEstimate();
+          });
+        });
+        input.addEventListener('input', updateEstimate);
+        wrap.appendChild(el);
+      });
+      updateEstimate();
+    }
+
+    function updateEstimate(){
+      let total = 0;
+      document.querySelectorAll('.qty input').forEach(inp=>{
+        const name = inp.dataset.name;
+        const q = parseInt(inp.value||'0',10);
+        total += (Number(catalog[name]||0) * q);
+      });
+      document.getElementById('est').textContent = fmtCOP(total);
+    }
+
+    function showNotice(html, type='info'){
+      const box = document.getElementById('result');
+      box.className = `alert ${type}`; box.style.display='block'; box.innerHTML = html;
+    }
+
+    async function loadInvoices(){
+      try {
+        const res = await fetch('/invoices');
+        const invoices = await res.json();
+        const tb = document.getElementById('tbInvoices');
+        tb.innerHTML = '';
+
+        if(invoices.length === 0) {
+          tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted)">No hay facturas aún</td></tr>';
+          return;
+        }
+
+        invoices.forEach(inv => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${inv.orderId}</td>
+            <td>${inv.customerName}</td>
+            <td class="right">${fmtCOP(inv.subtotal)}</td>
+            <td class="right">${fmtCOP(inv.tax)}</td>
+            <td class="right">${fmtCOP(inv.total)}</td>
+          `;
+          tb.appendChild(tr);
+        });
+      } catch(err) {
+        console.error('Error cargando facturas:', err);
+      }
+    }
+
+    async function loadNotifications(){
+      try {
+        const res = await fetch('/notifications');
+        const notifications = await res.json();
+        const list = document.getElementById('notificationsList');
+        list.innerHTML = '';
+
+        if(notifications.length === 0) {
+          list.innerHTML = '<div style="text-align:center; color:var(--muted); padding:20px">No hay notificaciones</div>';
+          return;
+        }
+
+        notifications.forEach(notif => {
+          const div = document.createElement('div');
+          const isDenied = notif.tipo === 'DENEGADO';
+          div.className = isDenied ? 'alert err' : 'alert ok';
+          div.innerHTML = `
+            <strong>${isDenied ? '❌ Pedido Rechazado' : '✅ Pedido Aceptado'}</strong><br>
+            <span style="font-size:14px">Pedido ID: ${notif.orderId}</span><br>
+            <span>${notif.mensaje}</span>
+          `;
+          list.appendChild(div);
+        });
+      } catch(err) {
+        console.error('Error cargando notificaciones:', err);
+      }
+    }
+
+    document.getElementById('send').addEventListener('click', async ()=>{
+      const customerName = document.getElementById('customerName').value.trim();
+      if(!customerName){ showNotice('⚠️ Escribe tu nombre','err'); return; }
+
+      const items=[]; document.querySelectorAll('.qty input').forEach(inp=>{
+        const q = parseInt(inp.value||'0',10); for(let i=0;i<q;i++) items.push(inp.dataset.name);
+      });
+      if(items.length===0){ showNotice('⚠️ Selecciona al menos un producto','err'); return; }
+
+      const res = await fetch('/orders',{ method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({customerName, items}) });
+      const data = await res.json(); const orderId = data.orderId;
+      showNotice(`Pedido enviado ✅ (ID: ${orderId}).<br>Esperando confirmación del restaurante...`,'ok');
+
+      // Limpiar formulario
+      document.getElementById('customerName').value = '';
+      document.querySelectorAll('.qty input').forEach(inp => inp.value = '0');
+      updateEstimate();
+    });
+
+    document.getElementById('refreshInvoices').onclick = loadInvoices;
+    document.getElementById('refreshNotifications').onclick = loadNotifications;
+
+    // Cargar datos iniciales
+    loadCatalog();
+    loadInvoices();
+    loadNotifications();
+
+    // Auto-refresh de facturas y notificaciones cada 3 segundos
+    setInterval(() => {
+      loadInvoices();
+      loadNotifications();
+    }, 3000);
+</script>
+</body>
+</html>

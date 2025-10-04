@@ -1,0 +1,3 @@
+
+ฝ
+java:S6204"zReplace this usage of 'Stream.collect(Collectors.toList())' with 'Stream.toList()' and ensure that the list is unmodified.(ชจน8ฎ’ห่3J$2f4c151d-98cd-4e58-9943-23fd3c7116a0

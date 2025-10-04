@@ -1,15 +1,11 @@
 package co.vinni;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Consumer");
-        try {
-            Receiver.receive();
-        } catch (IOException | TimeoutException e) {
-            System.err.println("Error to receive message "+e);
-        }
+        SpringApplication.run(Main.class, args);
     }
 }
