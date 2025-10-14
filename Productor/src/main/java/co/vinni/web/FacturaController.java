@@ -22,7 +22,8 @@ public class FacturaController {
     }
 
     @GetMapping("/order/{orderId}")
-    public Factura getFacturaByOrderId(@PathVariable String orderId) {
+    public Factura getFacturaByOrderId(@PathVariable("orderId") String orderId) {
         return facturaConsumerService.getFacturaByOrderId(orderId);
     }
+
 }

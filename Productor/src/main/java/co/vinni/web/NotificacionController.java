@@ -21,8 +21,9 @@ public class NotificacionController {
         return notificacionConsumerService.getAllNotificaciones();
     }
 
+    // /notifications/order/{orderId}
     @GetMapping("/order/{orderId}")
-    public Notificacion getNotificacionByOrderId(@PathVariable String orderId) {
+    public Notificacion getNotificacionByOrderId(@PathVariable("orderId") String orderId) {
         return notificacionConsumerService.getNotificacionByOrderId(orderId);
     }
 }
