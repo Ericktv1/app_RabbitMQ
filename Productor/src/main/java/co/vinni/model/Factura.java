@@ -10,18 +10,23 @@ public class Factura implements Serializable {
     private double tax;
     private double total;
 
+    // NUEVO: cocina de la orden (ITALIANA | ASIATICA)
+    private String cuisine;
+
     public Factura() {}
 
-    public Factura(String id, String orderId, String customerName, double subtotal, double tax, double total) {
+    public Factura(String id, String orderId, String customerName,
+                   double subtotal, double tax, double total, String cuisine) {
         this.id = id;
         this.orderId = orderId;
         this.customerName = customerName;
         this.subtotal = subtotal;
         this.tax = tax;
         this.total = total;
+        this.cuisine = cuisine;
     }
 
-    // Getters y Setters
+    // Getters / Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -40,6 +45,9 @@ public class Factura implements Serializable {
     public double getTotal() { return total; }
     public void setTotal(double total) { this.total = total; }
 
+    public String getCuisine() { return cuisine; }
+    public void setCuisine(String cuisine) { this.cuisine = cuisine; }
+
     @Override
     public String toString() {
         return "Factura{" +
@@ -49,6 +57,7 @@ public class Factura implements Serializable {
                 ", subtotal=" + subtotal +
                 ", tax=" + tax +
                 ", total=" + total +
+                ", cuisine='" + cuisine + '\'' +
                 '}';
     }
 }

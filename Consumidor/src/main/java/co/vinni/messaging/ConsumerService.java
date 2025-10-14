@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+import static co.vinni.config.RabbitConfig.QUEUE_ASIATICA;
+import static co.vinni.config.RabbitConfig.QUEUE_ITALIANA;
+
 @Service
 public class ConsumerService {
 
@@ -21,16 +24,24 @@ public class ConsumerService {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    @RabbitListener(queues = "pedido-queue")
+    @RabbitListener(queues = {QUEUE_ITALIANA, QUEUE_ASIATICA})
     public void recibirPedido(Pedido pedido) {
-        System.out.println("📥 Pedido recibido: " + pedido);
+        System.out.println("📥 Pedido recibido (" + pedido.getCuisine() + "): " + pedido);
         pedidoRepository.addPedido(pedido);
     }
 
     public List<Pedido> getPedidos() {
         return pedidoRepository.getPendientes();
     }
-
+    public List<Pedido> getPedidos(String cuisine) {
+        if (cuisine == null || cuisine.isBlank()) {
+            return pedidoRepository.getPendientes(); // fallback (opcional)
+        }
+        return pedidoRepository.getPendientesByCuisine(cuisine);
+    }
+    public List<Map<String, Object>> getFacturasByCuisine(String cuisine) {
+        return pedidoRepository.getFacturasByCuisine(cuisine);
+    }
     public List<Map<String, Object>> getFacturas() {
         return pedidoRepository.getFacturas();
     }
@@ -41,7 +52,6 @@ public class ConsumerService {
             pedido.setStatus("ACEPTADO");
             pedidoRepository.update(pedido);
 
-            // Crear factura
             double subtotal = pedido.getTotal();
             double tax = subtotal * 0.19;
             double total = subtotal + tax;
@@ -52,10 +62,11 @@ public class ConsumerService {
                     pedido.getCustomerName(),
                     subtotal,
                     tax,
-                    total
+                    total,
+                    pedido.getCuisine() // <<--- NUEVO
             );
 
-            // Guardar en repositorio local
+            // Guardar en repositorio local (si sigues usando Map)
             Map<String, Object> facturaMap = new HashMap<>();
             facturaMap.put("id", factura.getId());
             facturaMap.put("orderId", factura.getOrderId());
@@ -63,13 +74,14 @@ public class ConsumerService {
             facturaMap.put("subtotal", factura.getSubtotal());
             facturaMap.put("tax", factura.getTax());
             facturaMap.put("total", factura.getTotal());
+            facturaMap.put("cuisine", factura.getCuisine()); // <<--- NUEVO
             pedidoRepository.addFactura(facturaMap);
 
             // Enviar factura al productor
-            System.out.println("📤 Enviando factura al cliente: " + factura);
             rabbitTemplate.convertAndSend("factura-queue", factura);
         }
     }
+
 
     public void denegarPedido(String id) {
         Pedido pedido = pedidoRepository.findById(id);

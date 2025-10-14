@@ -18,8 +18,9 @@ public class PedidoController {
     }
 
     @GetMapping("/pending")
-    public List<Pedido> getPedidosPendientes() {
-        return consumerService.getPedidos();
+    public List<Pedido> getPedidosPendientes(@RequestParam(name = "cuisine", required = false) String cuisine) {
+        // Si quieres forzar que siempre venga, cambia required=true y valida.
+        return consumerService.getPedidos(cuisine);
     }
 
     @PostMapping("/{id}/accept")

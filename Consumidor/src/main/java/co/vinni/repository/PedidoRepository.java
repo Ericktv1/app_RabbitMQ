@@ -17,9 +17,17 @@ public class PedidoRepository {
         pedidos.put(pedido.getId(), pedido);
     }
 
+
     public List<Pedido> getPendientes() {
         return pedidos.values().stream()
                 .filter(p -> "PENDIENTE".equals(p.getStatus()))
+                .collect(Collectors.toList());
+    }
+    // ...
+    public List<Pedido> getPendientesByCuisine(String cuisine) {
+        return pedidos.values().stream()
+                .filter(p -> "PENDIENTE".equals(p.getStatus()))
+                .filter(p -> p.getCuisine() != null && p.getCuisine().equalsIgnoreCase(cuisine))
                 .collect(Collectors.toList());
     }
 
@@ -39,5 +47,16 @@ public class PedidoRepository {
 
     public List<Map<String, Object>> getFacturas() {
         return new ArrayList<>(facturas);
+    }
+    public List<Map<String, Object>> getFacturasByCuisine(String cuisine) {
+        if (cuisine == null || cuisine.isBlank()) {
+            return getFacturas();
+        }
+        return facturas.stream()
+                .filter(f -> {
+                    Object c = f.get("cuisine");
+                    return c != null && cuisine.equalsIgnoreCase(c.toString());
+                })
+                .collect(Collectors.toList());
     }
 }

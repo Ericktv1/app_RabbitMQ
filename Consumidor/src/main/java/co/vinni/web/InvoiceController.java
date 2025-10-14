@@ -3,6 +3,7 @@ package co.vinni.web;
 import co.vinni.messaging.ConsumerService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -19,7 +20,11 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getFacturas() {
-        return consumerService.getFacturas();
+    public List<Map<String, Object>> getFacturas(
+            @RequestParam(name = "cuisine", required = false) String cuisine) {
+        if (cuisine == null || cuisine.isBlank()) {
+            return consumerService.getFacturas();
+        }
+        return consumerService.getFacturasByCuisine(cuisine);
     }
 }
