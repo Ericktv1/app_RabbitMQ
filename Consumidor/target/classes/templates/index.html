@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>Restaurante · Pedidos y Promociones</title>
+    <title>Restaurante — Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         :root {
@@ -11,22 +11,27 @@
           --ok:#19c37d; --danger:#ff6b6b; --warn:#ffc857;
           --radius:18px; --shadow:0 12px 30px rgba(0,0,0,.35);
         }
-        body { margin:0; font-family:ui-sans-serif,system-ui; background:linear-gradient(180deg,#0a0f23 0%,#0b1020 100%); color:var(--text); }
+        body {
+          margin:0;
+          font-family:ui-sans-serif,system-ui;
+          background:linear-gradient(180deg,#0a0f23 0%,#0b1020 100%);
+          color:var(--text);
+        }
         .container { max-width:1100px;margin:24px auto;padding:0 16px;display:flex;flex-direction:column;gap:22px }
-        h1 { margin:0 0 6px 0; font-size:28px }
-        .card { background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+        h1 { margin:0 0 6px 0; font-size:26px }
+        .card { background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%);
+                border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
         .panel { padding:16px 18px }
         .toolbar { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;flex-wrap:wrap }
         .left { display:flex;align-items:center;gap:12px;flex-wrap:wrap }
-        .select,.btn,.input {
-          appearance:none; border:1px solid var(--border);
-          background:linear-gradient(180deg,#16245d,#0d1745);
-          color:var(--text); padding:10px 14px; border-radius:12px; font-weight:700;
-        }
+        .select,.btn { appearance:none; border:1px solid var(--border);
+                       background:linear-gradient(180deg,#16245d,#0d1745);
+                       color:var(--text); padding:10px 14px; border-radius:12px; font-weight:700; }
         .btn { cursor:pointer }
         .btn.ok { background:linear-gradient(180deg,#2fe09d,#19c37d); color:#041d12; border:none }
-        .btn.warn { background:linear-gradient(180deg,#ffc857,#f0a91b); color:#2a1e02; border:none }
         .btn.danger { background:linear-gradient(180deg,#ff817e,#ff6b6b); color:#2b0606; border:none }
+        .btn.warn { background:linear-gradient(180deg,#ffc857,#f0a91b); color:#2a1e02; border:none }
+        .btn.ghost { background:rgba(255,255,255,.06); border:1px solid var(--border); }
         table { width:100%; border-collapse:collapse; border-radius:14px }
         th,td { padding:12px 10px; border-bottom:1px solid var(--border) }
         th { background:rgba(255,255,255,.04); text-align:left }
@@ -35,250 +40,185 @@
         .PENDIENTE { background:#2e3352;color:#c7d2ff }
         .ACEPTADO { background:#133c2a;color:#bff3df }
         .DENEGADO { background:#4a1b1b;color:#ffd2d2 }
-        .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border) }
         .muted { color:var(--muted);font-size:14px }
-        /* Mejora visual del menú desplegable */
-        select option {
-          background-color: #16245d; /* azul oscuro */
-          color: #ffffff;            /* texto blanco */
-        }
-
-        /* Evita que las opciones seleccionadas se vean invertidas */
-        select option:checked,
-        select option:hover {
-          background-color: #1f3a85; /* azul un poco más claro al pasar el mouse */
-          color: #ffffff;
-        }
-
+        .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border) }
+        .alert { padding:10px 12px; border-radius:10px; margin-bottom:12px }
+        .alert.info { background:rgba(106,164,255,.15); border:1px solid rgba(106,164,255,.35) }
+        .alert.ok { background:rgba(25,195,125,.12); border:1px solid rgba(25,195,125,.35) }
+        .alert.err { background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35) }
     </style>
 </head>
 <body>
 <div class="container">
+    <header class="toolbar">
+        <h1>🍽️ Restaurante — Panel</h1>
+        <div>
+            <span class="pill">Rol: <b id="role">—</b></span>
+            <span class="pill">Usuario: <b id="user">—</b></span>
+            <button id="btnLogin" class="btn">Ingresar</button>
+            <button id="btnLogout" class="btn ghost" style="display:none">Salir</button>
+        </div>
+    </header>
 
     <!-- PROMOCIONES -->
-    <section class="card">
+    <section id="secPromos" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
                 <div class="left">
-                    <h1 style="margin:0">🎯 Promociones por cocina</h1>
+                    <h1>🎯 Promociones por cocina</h1>
                     <select id="cuisine" class="select">
                         <option value="ITALIANA">Cocina Italiana</option>
                         <option value="ASIATICA">Cocina Asiática</option>
                     </select>
                 </div>
             </div>
-
             <div class="left" style="margin-bottom:12px; flex-wrap:wrap">
-                <label class="muted">Tipo:</label>
                 <select id="promoType" class="select">
                     <option value="DESCUENTO">20% Descuento</option>
                     <option value="2X1">2x1 en producto</option>
                 </select>
-
-                <!-- ⬇️ antes era input; ahora es select, mismo estilo -->
                 <select id="product2x1" class="select" style="display:none; min-width:220px"></select>
-
                 <button id="btnActivate" class="btn ok">✅ Activar</button>
                 <button id="btnDeactivate" class="btn danger">⛔ Desactivar</button>
             </div>
-
-            <div id="promoState" class="muted" style="margin-top:6px">Estado: —</div>
-            <div id="promoMsg" class="muted" style="margin-top:6px"></div>
+            <div id="promoState" class="muted">Estado: —</div>
+            <div id="promoMsg" class="muted"></div>
         </div>
     </section>
 
     <!-- PEDIDOS -->
-    <section class="card">
+    <section id="secOrders" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
-                <div class="left">
-                    <h1 style="margin:0">🍝 Pedidos pendientes — <span id="titleCuisine">Cocina Italiana</span></h1>
-                </div>
+                <h1>🍝 Pedidos pendientes — <span id="titleCuisine">Cocina Italiana</span></h1>
                 <button id="refreshOrders" class="btn">Actualizar</button>
             </div>
             <table>
-                <thead>
-                <tr>
-                    <th>ID</th><th>Cliente</th><th>Cocina</th><th>Items</th><th class="right">Total</th><th>Estado</th><th class="right">Acción</th>
-                </tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Cliente</th><th>Cocina</th><th>Items</th><th class="right">Total</th><th>Estado</th><th class="right">Acción</th></tr></thead>
                 <tbody id="tbOrders"></tbody>
             </table>
         </div>
     </section>
 
     <!-- FACTURAS -->
-    <section class="card">
+    <section id="secInvoices" class="card" style="display:none">
         <div class="panel">
-            <div class="toolbar">
-                <h1 style="margin:0">Facturas</h1>
-                <button id="refreshInvoices" class="btn">Actualizar</button>
-            </div>
-            <table>
-                <thead>
-                <tr>
-                    <th>OrdenID</th><th>Cliente</th><th class="right">Subtotal</th><th class="right">IVA</th><th class="right">Total</th>
-                </tr>
-                </thead>
-                <tbody id="tbInvoices"></tbody>
-            </table>
+            <div class="toolbar"><h1>Facturas</h1><button id="refreshInvoices" class="btn">Actualizar</button></div>
+            <table><thead><tr><th>OrdenID</th><th>Cliente</th><th class="right">Subtotal</th><th class="right">IVA</th><th class="right">Total</th></tr></thead>
+                <tbody id="tbInvoices"></tbody></table>
+        </div>
+    </section>
+
+    <!-- VENTAS -->
+    <section id="secSales" class="card" style="display:none">
+        <div class="panel">
+            <div class="toolbar"><h1>💰 Ventas registradas</h1><button id="refreshSales" class="btn">Actualizar</button></div>
+            <table><thead><tr><th>ID Pedido</th><th>Cliente</th><th>Total</th><th>Pagado</th><th>Repartidor</th></tr></thead>
+                <tbody id="tbSales"></tbody></table>
+        </div>
+    </section>
+
+    <!-- REPARTIDOR -->
+    <section id="secDelivery" class="card" style="display:none">
+        <div class="panel">
+            <div class="toolbar"><h1>🛵 Repartidor — Pedidos para entregar</h1><button id="refreshDelivery" class="btn">Actualizar</button></div>
+            <div id="repaPromoBanner" class="alert info" style="display:none"></div>
+            <table><thead><tr><th>ID</th><th>Cliente</th><th>Cocina</th><th>Items</th><th class="right">Total</th><th>Cobro</th></tr></thead>
+                <tbody id="tbDelivery"></tbody></table>
         </div>
     </section>
 </div>
 
 <script>
     const fmtCOP = n => Number(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
-    const cuisineName = c => c==='ASIATICA' ? 'Cocina Asiática' : 'Cocina Italiana';
-    function getCuisine(){ return document.getElementById('cuisine').value; }
-    function setTitle(){ document.getElementById('titleCuisine').textContent = cuisineName(getCuisine()); }
+    const ROLE = {ADMIN:'admin', REPA:'repartidor'};
+    let role=null, user=null;
 
-    // === PROMOCIONES ===
-    const cuisineEl = document.getElementById('cuisine');
-    const typeEl = document.getElementById('promoType');
-    const prodEl = document.getElementById('product2x1');
-    const msgEl = document.getElementById('promoMsg');
-    const stateEl = document.getElementById('promoState');
-
-    // Productos por cocina (debe coincidir con el catálogo del productor)
-    const MENU = {
-      ITALIANA: ["Pasta","Pizza","Tiramisu"],
-      ASIATICA: ["Ramen","Sushi","Bao"]
+    // === LOGIN ===
+    document.getElementById('btnLogin').onclick = ()=>{
+      const u = prompt('Usuario (admin/repartidor):')?.trim().toLowerCase();
+      if(!u) return;
+      const p = prompt('Contraseña:');
+      if((u==='admin' && p==='123')||(u==='repartidor'&&p==='456')){
+        role=u==='admin'?ROLE.ADMIN:ROLE.REPA;
+        user=u;
+        setRole(role);
+      }else alert('Credenciales inválidas');
     };
+    document.getElementById('btnLogout').onclick = ()=>{location.reload();};
 
-    function render2x1Options() {
-      const cuisine = getCuisine();
-      const items = MENU[cuisine] || [];
-      prodEl.innerHTML = '';
-      const ph = document.createElement('option');
-      ph.value = '';
-      ph.disabled = true;
-      ph.selected = true;
-      ph.textContent = 'Selecciona un producto';
-      prodEl.appendChild(ph);
-      items.forEach(name=>{
-        const op = document.createElement('option');
-        op.value = name;
-        op.textContent = name;
-        prodEl.appendChild(op);
-      });
+    // === RENDER DE ROLES ===
+    function setRole(r){
+      document.getElementById('role').textContent=r;
+      document.getElementById('user').textContent=user;
+      document.getElementById('btnLogin').style.display='none';
+      document.getElementById('btnLogout').style.display='inline-block';
+      // mostrar secciones
+      document.getElementById('secPromos').style.display = (r===ROLE.ADMIN)?'block':'none';
+      document.getElementById('secOrders').style.display = (r===ROLE.ADMIN)?'block':'none';
+      document.getElementById('secInvoices').style.display = (r===ROLE.ADMIN)?'block':'none';
+      document.getElementById('secSales').style.display = (r===ROLE.ADMIN)?'block':'none';
+      document.getElementById('secDelivery').style.display = (r===ROLE.REPA)?'block':'none';
+      if(r===ROLE.ADMIN){ loadOrders(); loadInvoices(); loadSales(); refreshState(); }
+      if(r===ROLE.REPA){ loadReadyOrders(); loadRepaPromo(); }
     }
 
-    async function refreshState(){
-      const r = await fetch(`/promotions/status?cuisine=${encodeURIComponent(getCuisine())}`);
-      const p = await r.json().catch(()=>null);
-      if(!p || !p.active){
-        stateEl.textContent = `Estado: Inactiva`;
-        return;
-      }
-      if(p.type === 'DESCUENTO'){
-        stateEl.textContent = `Estado: ACTIVA — ${Math.round((p.percent||0)*100)}% OFF (${p.cuisine})`;
-      }else if(p.type === '2X1'){
-        stateEl.textContent = `Estado: ACTIVA — 2x1 en ${p.product} (${p.cuisine})`;
-      }else{
-        stateEl.textContent = `Estado: ACTIVA`;
-      }
-    }
-
-    document.getElementById('btnActivate').onclick = async ()=>{
-      const c = getCuisine();
-      const t = typeEl.value;
-      let url = '';
-      if(t === 'DESCUENTO'){
-        url = `/promotions/${c}/activate/discount20`;
-      }else{
-        const prod = (prodEl.value||'').trim();
-        if(!prod){ alert('Selecciona el producto para 2x1'); return; }
-        url = `/promotions/${c}/activate/twoforone?product=${encodeURIComponent(prod)}`;
-      }
-      const res = await fetch(url, {method:'POST'});
-      const data = await res.json().catch(()=>({message:'OK'}));
-      msgEl.textContent = data.message || 'OK';
-      await refreshState();
-    };
-
-    document.getElementById('btnDeactivate').onclick = async ()=>{
-      const c = getCuisine();
-      const res = await fetch(`/promotions/${c}/deactivate`, {method:'POST'});
-      const data = await res.json().catch(()=>({message:'OK'}));
-      msgEl.textContent = data.message || 'OK';
-      await refreshState();
-    };
-
-    cuisineEl.addEventListener('change', ()=>{
-      refreshState(); setTitle();
-      if (typeEl.value === '2X1') render2x1Options();
-    });
-
-    typeEl.addEventListener('change', ()=>{
-      const show = (typeEl.value === '2X1');
-      prodEl.style.display = show ? 'inline-block' : 'none';
-      if (show) render2x1Options();
-    });
-
-    // === PEDIDOS ===
+    // === ADMIN: PEDIDOS ===
     async function loadOrders(){
-      const c = getCuisine();
-      const res = await fetch(`/orders/pending?cuisine=${encodeURIComponent(c)}`);
-      const orders = await res.json();
-      const tb = document.getElementById('tbOrders'); tb.innerHTML='';
-
-      if(!Array.isArray(orders) || orders.length===0){
-        tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:18px">No hay pedidos pendientes</td></tr>';
-        return;
-      }
-
-      orders.forEach(o=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${o.id}</td>
-          <td>${o.customerName}</td>
-          <td><span class="pill">${o.cuisine||'-'}</span></td>
-          <td>${(o.items||[]).join(', ')}</td>
-          <td class="right">${fmtCOP(o.total)}</td>
-          <td><span class="badge ${o.status}">${o.status}</span></td>
-          <td class="right">
-            <button class="btn ok" onclick="act('${o.id}',true)">Aceptar</button>
-            <button class="btn danger" onclick="act('${o.id}',false)">Denegar</button>
-          </td>`;
-        tb.appendChild(tr);
+      const res=await fetch('/orders/pending?cuisine=ITALIANA'); const data=await res.json();
+      const tb=document.getElementById('tbOrders'); tb.innerHTML='';
+      if(!data.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted)">No hay pedidos</td></tr>';return;}
+      data.forEach(o=>{
+        tb.innerHTML+=`<tr><td>${o.id}</td><td>${o.customerName}</td><td><span class="pill">${o.cuisine}</span></td><td>${o.items.join(', ')}</td>
+        <td class="right">${fmtCOP(o.total)}</td><td><span class="badge ${o.status}">${o.status}</span></td>
+        <td class="right"><button class="btn ok" onclick="act('${o.id}',true)">Aceptar</button>
+        <button class="btn danger" onclick="act('${o.id}',false)">Denegar</button></td></tr>`;
       });
     }
+    async function act(id,ok){await fetch(`/orders/${id}/${ok?'accept':'deny'}`,{method:'POST'});loadOrders();loadInvoices();}
 
-    async function act(id, ok){
-      const url = ok? `/orders/${id}/accept` : `/orders/${id}/deny`;
-      await fetch(url, {method:'POST'});
-      await loadOrders(); await loadInvoices();
-    }
-
+    // === ADMIN: FACTURAS ===
     async function loadInvoices(){
-      const c = getCuisine();
-      const res = await fetch(`/invoices?cuisine=${encodeURIComponent(c)}`);
-      const invoices = await res.json();
-      const tb = document.getElementById('tbInvoices'); tb.innerHTML='';
-
-      if(!Array.isArray(invoices) || invoices.length===0){
-        tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:18px">No hay facturas</td></tr>';
-        return;
-      }
-
-      invoices.forEach(i=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${i.orderId}</td><td>${i.customerName}</td>
-          <td class="right">${fmtCOP(i.subtotal)}</td>
-          <td class="right">${fmtCOP(i.tax)}</td>
-          <td class="right">${fmtCOP(i.total)}</td>`;
-        tb.appendChild(tr);
-      });
+      const r=await fetch('/invoices?cuisine=ITALIANA'); const data=await r.json();
+      const tb=document.getElementById('tbInvoices'); tb.innerHTML='';
+      if(!data.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay facturas</td></tr>';return;}
+      data.forEach(i=>tb.innerHTML+=`<tr><td>${i.orderId}</td><td>${i.customerName}</td>
+      <td class="right">${fmtCOP(i.subtotal)}</td><td class="right">${fmtCOP(i.tax)}</td><td class="right">${fmtCOP(i.total)}</td></tr>`);
     }
 
-    // === AUTO REFRESH ===
-    document.getElementById('refreshOrders').onclick = loadOrders;
-    document.getElementById('refreshInvoices').onclick = loadInvoices;
-    setInterval(()=>{ loadOrders(); loadInvoices(); refreshState(); }, 4000);
+    // === ADMIN: PROMOS ===
+    async function refreshState(){
+      const c='ITALIANA'; const r=await fetch(`/promotions/status?cuisine=${c}`); const p=await r.json(); const s=document.getElementById('promoState');
+      s.textContent=p.active?`Activa: ${p.type==='DESCUENTO'?Math.round(p.percent*100)+'% OFF':'2x1 en '+p.product}`:'Inactiva';
+    }
 
-    // Inicial
-    setTitle(); refreshState(); loadOrders(); loadInvoices();
+    // === ADMIN: VENTAS ===
+    async function loadSales(){
+      const r=await fetch('/sales'); const data=await r.json();
+      const tb=document.getElementById('tbSales'); tb.innerHTML='';
+      if(!data.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay ventas</td></tr>';return;}
+      data.forEach(v=>tb.innerHTML+=`<tr><td>${v.orderId}</td><td>${v.customerName}</td><td class="right">${fmtCOP(v.total)}</td>
+      <td>${v.pagado?'✅':'❌'}</td><td>${v.repartidor}</td></tr>`);
+    }
+
+    // === REPARTIDOR ===
+    async function loadReadyOrders(){
+      const r=await fetch('/delivery/ready'); const data=await r.json();
+      const tb=document.getElementById('tbDelivery'); tb.innerHTML='';
+      if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay pedidos</td></tr>';return;}
+      data.forEach(o=>tb.innerHTML+=`<tr><td>${o.id}</td><td>${o.customerName}</td><td><span class="pill">${o.cuisine}</span></td>
+      <td>${o.items.join(', ')}</td><td class="right">${fmtCOP(o.total)}</td>
+      <td><button class="btn ok" onclick="markPaid('${o.id}',true)">Pagado</button>
+      <button class="btn danger" onclick="markPaid('${o.id}',false)">No pagado</button></td></tr>`);
+    }
+    async function markPaid(id,paid){await fetch(`/delivery/${id}/pay?paid=${paid}&who=${user}`,{method:'POST'});loadReadyOrders();}
+
+    // === REPARTIDOR: PROMOS ===
+    async function loadRepaPromo(){
+      const c='ITALIANA'; const r=await fetch(`/delivery/promotions/status?cuisine=${c}`); const p=await r.json(); const b=document.getElementById('repaPromoBanner');
+      if(!p.active){b.style.display='none';return;}
+      b.innerHTML=p.type==='DESCUENTO'?`🔥 ${Math.round(p.percent*100)}% OFF en ${p.cuisine}`:`🔥 2x1 en ${p.product} (${p.cuisine})`; b.style.display='block';
+    }
 </script>
 </body>
 </html>

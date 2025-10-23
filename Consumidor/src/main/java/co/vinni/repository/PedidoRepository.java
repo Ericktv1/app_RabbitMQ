@@ -59,4 +59,21 @@ public class PedidoRepository {
                 })
                 .collect(Collectors.toList());
     }
+    // añade dentro de PedidoRepository
+    public List<Pedido> getAceptados() {
+        return pedidos.values().stream()
+                .filter(p -> Pedido.ESTADO_ACEPTADO.equals(p.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Pedido> getAceptadosByCuisine(String cuisine) {
+        return pedidos.values().stream()
+                .filter(p -> Pedido.ESTADO_ACEPTADO.equals(p.getStatus()))
+                .filter(p -> p.getCuisine() != null && p.getCuisine().equalsIgnoreCase(cuisine))
+                .collect(Collectors.toList());
+    }
+    public void remove(String id) {
+        pedidos.remove(id);
+    }
+
 }
