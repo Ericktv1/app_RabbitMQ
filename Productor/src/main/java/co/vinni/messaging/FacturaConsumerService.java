@@ -17,7 +17,8 @@ public class FacturaConsumerService {
     @RabbitListener(queues = "factura-queue")
     public void recibirFactura(Factura factura) {
         System.out.println("📥 Factura recibida: " + factura);
-        facturas.put(factura.getId(), factura);
+        facturas.put(factura.getOrderId(), factura);
+
     }
 
     public List<Factura> getAllFacturas() {

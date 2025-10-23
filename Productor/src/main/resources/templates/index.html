@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Cliente · Realiza tu pedido</title>
+    <title>Cliente — Login y Pedido</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         :root{
@@ -22,7 +22,7 @@
         .title{font-size:28px;font-weight:800;letter-spacing:.2px}
         .card{background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%);border:1px solid var(--border); border-radius:var(--radius);box-shadow:var(--shadow);}
         .panel{padding:18px 18px}
-        .row{display:grid;grid-template-columns:1fr 320px; gap:18px}
+        .row{display:grid;grid-template-columns:1fr 360px; gap:18px}
         @media (max-width:900px){ .row{grid-template-columns:1fr} }
         .input,.select{width:100%; background:#0c1330;border:1px solid var(--border); color:var(--text);padding:12px 14px;border-radius:12px;}
         .muted{color:var(--muted);font-size:14px}
@@ -30,47 +30,49 @@
         @media (max-width:640px){ .grid{grid-template-columns:1fr} }
         .prod{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;background:rgba(255,255,255,.03); border:1px solid var(--border);padding:14px; border-radius:14px;}
         .prod h4{margin:0;font-size:16px}
-        .price{color:var(--brand-2);font-weight:700}
+        .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border)}
         .qty{display:flex; align-items:center; gap:6px; background:#0b1230;border:1px solid var(--border); border-radius:12px; padding:4px;}
         .qty button{width:32px; height:32px; border-radius:10px; border:1px solid var(--border);background:linear-gradient(180deg,#16245d,#0d1745); color:var(--text); cursor:pointer;}
         .qty input{width:52px; text-align:center; border:none; background:transparent; color:var(--text); font-weight:700;}
         .summary{position:sticky; top:16px;display:flex; flex-direction:column; gap:12px;}
         .tot{display:flex; align-items:center; justify-content:space-between;padding:14px 16px; border:1px dashed var(--border); border-radius:14px;background:rgba(255,255,255,.03);font-weight:700;}
-        .btn{appearance:none; border:none; cursor:pointer; width:100%;padding:14px 16px; border-radius:14px; font-weight:800;letter-spacing:.3px;color:#071024; background:linear-gradient(180deg, var(--brand), #4d7fff);}
+        .btn{appearance:none; border:none; cursor:pointer; padding:10px 14px; border-radius:12px; font-weight:800;letter-spacing:.3px;color:#071024; background:linear-gradient(180deg, var(--brand), #4d7fff);}
+        .btn.ghost{background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--border);}
         .alert{padding:12px 14px; border-radius:12px; font-weight:600}
         .alert.info{background:rgba(106,164,255,.12); border:1px solid rgba(106,164,255,.35)}
         .alert.ok{background:rgba(25,195,125,.12); border:1px solid rgba(25,195,125,.35)}
         .alert.err{background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35)}
-        .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border)}
-        table{width:100%; border-collapse:collapse}
-        th,td{padding:10px; border-bottom:1px solid var(--border)}
-        th{background:rgba(255,255,255,.05); text-align:left}
-        .right{text-align:right}
-        .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-        .btn-mini{appearance:none; border:1px solid var(--border); background:#0c1330; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
+        .toolbar{display:flex;gap:8px;align-items:center}
+        .pill{font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border)}
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <div class="title">🍽️ Realiza tu pedido</div>
+        <div class="title">🍽️ Cliente — Login y Pedido</div>
+        <div class="toolbar">
+            <span class="pill">Cliente: <b id="who">—</b></span>
+            <button id="btnLogin" class="btn">Ingresar</button>
+            <button id="btnLogout" class="btn ghost" style="display:none">Cerrar sesión</button>
+            <button id="btnFocusOrder" class="btn ghost">Hacer pedido</button>
+        </div>
     </header>
 
     <div class="row">
         <section class="card">
             <div class="panel">
                 <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap">
-                    <input id="customerName" class="input" placeholder="Tu nombre" style="max-width:280px">
-                    <select id="cuisine" class="select" style="max-width:220px">
+                    <select id="cuisine" class="select" style="max-width:260px">
                         <option value="ITALIANA">Cocina Italiana</option>
                         <option value="ASIATICA">Cocina Asiática</option>
                     </select>
                     <span class="muted">Elige tu cocina; los precios ya incluyen promociones activas.</span>
                 </div>
 
-                <!-- Banner de promoción activa -->
+                <!-- Promo -->
                 <div id="promoBanner" class="alert info" style="display:none"></div>
 
+                <!-- Catálogo -->
                 <div class="grid" id="catalog"></div>
             </div>
         </section>
@@ -82,265 +84,286 @@
                 <button id="send" class="btn">Enviar pedido</button>
             </div>
 
-            <!-- Resultado del envío + tracking -->
-            <div id="result" class="alert info" style="display:none"></div>
-            <div id="orderStatus" class="alert info" style="display:none"></div>
+            <!-- Mensajes de estado -->
+            <div id="sentMsg" class="alert ok" style="display:none"></div>
+            <div id="pendingMsg" class="alert info" style="display:none">⏳ Esperando respuesta del restaurante…</div>
+            <div id="finalMsg" class="alert info" style="display:none"></div>
         </aside>
     </div>
-
-    <!-- MIS FACTURAS -->
-    <section class="card">
-        <div class="panel">
-            <div class="toolbar">
-                <h2 style="margin:0">Mis Facturas</h2>
-                <button id="refreshInvoices" class="btn-mini">Actualizar</button>
-            </div>
-            <table>
-                <thead>
-                <tr>
-                    <th>OrdenID</th><th>Cliente</th><th class="right">Subtotal</th><th class="right">IVA</th><th class="right">Total</th>
-                </tr>
-                </thead>
-                <tbody id="tbInvoices"></tbody>
-            </table>
-        </div>
-    </section>
-
-    <!-- NOTIFICACIONES -->
-    <section class="card">
-        <div class="panel">
-            <div class="toolbar">
-                <h2 style="margin:0">Notificaciones</h2>
-                <button id="refreshNotifications" class="btn-mini">Actualizar</button>
-            </div>
-            <div id="notificationsList" style="display:flex; flex-direction:column; gap:12px"></div>
-        </div>
-    </section>
 </div>
 
 <script>
+    // ========= Utilidades =========
     const fmtCOP = n => Number(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
     const selCuisine = () => document.getElementById('cuisine').value;
-    let catalog = {};             // { nombre: precio }
-    let watchTimer = null;        // intervalo para trackear última orden
-    let lastOrderId = null;       // id del último pedido enviado
 
+    // ========= Estado global seguro =========
+    const state = {
+      user: null,
+      catalog: {},             // { item: price }
+      quantities: {},          // { item: qty } persistente mientras se refresca el catálogo
+      refreshCatalogTimer: null,
+      activeOrderId: null,
+      pollTimer: null
+    };
+
+    // ========= Login sencillo (3 usuarios fijos) =========
+    const USERS = {
+      erick:  '123',
+      jeison: '456',
+      arelis: '789'
+    };
+
+    function setUser(u){
+      state.user = u || null;
+      if (u) sessionStorage.setItem('clientUser', u); else sessionStorage.removeItem('clientUser');
+      document.getElementById('who').textContent = state.user || '—';
+      document.getElementById('btnLogin').style.display  = state.user ? 'none' : 'inline-block';
+      document.getElementById('btnLogout').style.display = state.user ? 'inline-block' : 'none';
+    }
+    // on load
+    setUser(sessionStorage.getItem('clientUser'));
+
+    document.getElementById('btnLogin').addEventListener('click', async ()=>{
+      const user = prompt('Usuario (erick / jeison / arelis):')?.trim().toLowerCase();
+      if(!user || !USERS[user]){ alert('Usuario inválido'); return; }
+      const pass = prompt('Contraseña:');
+      if(pass !== USERS[user]){ alert('Contraseña incorrecta'); return; }
+      setUser(user);
+      alert(`Bienvenido, ${user}!`);
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', ()=>{
+      stopOrderPolling();
+      setUser(null);
+      // limpiar mensajes
+      document.getElementById('sentMsg').style.display = 'none';
+      document.getElementById('pendingMsg').style.display = 'none';
+      document.getElementById('finalMsg').style.display = 'none';
+    });
+
+    document.getElementById('btnFocusOrder').addEventListener('click', ()=>{
+      document.querySelector('.grid')?.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+
+    // ========= Catálogo / Promos =========
     function qtyInputs(){ return document.querySelectorAll('#catalog .qty input'); }
 
-    async function loadCatalog(){
-      // Guarda cantidades actuales
-      const currentQty = {};
-      document.querySelectorAll('#catalog .qty input').forEach(inp => {
-        currentQty[inp.dataset.name] = inp.value;
-      });
-
-      const res = await fetch(`/orders/catalog?cuisine=${encodeURIComponent(selCuisine())}`);
-      catalog = await res.json();
-
-      buildCatalog();
-
-      // Restaura cantidades previas
-      document.querySelectorAll('#catalog .qty input').forEach(inp => {
-        if (currentQty[inp.dataset.name] !== undefined) {
-          inp.value = currentQty[inp.dataset.name];
-        }
-      });
-
-      showActivePromo();
-      updateEstimate();
-    }
-
     function buildCatalog(){
-      const grid = document.getElementById('catalog'); grid.innerHTML='';
-      Object.entries(catalog).forEach(([name, price])=>{
+      const grid = document.getElementById('catalog');
+      grid.innerHTML = '';
+
+      Object.entries(state.catalog).forEach(([name, price])=>{
+        // Mantener qty existente
+        const q = Number(state.quantities[name] || 0);
+
         const el = document.createElement('div');
-        el.className='prod';
+        el.className = 'prod';
         el.innerHTML = `
           <div>
             <h4>${name} <span class="badge">${fmtCOP(price)}</span></h4>
           </div>
           <div class="qty">
-            <button type="button" data-d="-1">-</button>
-            <input type="number" min="0" value="0" data-name="${name}">
-            <button type="button" data-d="1">+</button>
+            <button type="button" data-name="${name}" data-d="-1">-</button>
+            <input type="number" min="0" value="${q}" data-name="${name}">
+            <button type="button" data-name="${name}" data-d="1">+</button>
           </div>`;
+
         const input = el.querySelector('input');
         el.querySelectorAll('button').forEach(b=>{
           b.addEventListener('click', ()=>{
             const d = Number(b.dataset.d);
-            const v = Math.max(0, Number(input.value||0) + d);
-            input.value = v; updateEstimate();
+            const item = b.dataset.name;
+            const newV = Math.max(0, Number((state.quantities[item]||0)) + d);
+            state.quantities[item] = newV;
+            input.value = newV;
+            updateEstimate();
           });
         });
-        input.addEventListener('input', updateEstimate);
+        input.addEventListener('input', ()=>{
+          const v = Math.max(0, Number(input.value||0));
+          state.quantities[input.dataset.name] = v;
+          updateEstimate();
+        });
+
         grid.appendChild(el);
       });
+
+      updateEstimate();
+    }
+
+    async function loadCatalog(){
+      const res = await fetch(`/orders/catalog?cuisine=${encodeURIComponent(selCuisine())}`, { cache:'no-store' });
+      state.catalog = await res.json();
+
+      // Reconciliar cantidades con el nuevo catálogo (por si un producto no existe)
+      const newQuantities = {};
+      Object.keys(state.catalog).forEach(name => newQuantities[name] = state.quantities[name] || 0);
+      state.quantities = newQuantities;
+
+      buildCatalog();
+      await showActivePromo();
     }
 
     function updateEstimate(){
       let total = 0;
-      qtyInputs().forEach(inp=>{
-        const name = inp.dataset.name;
-        const q = parseInt(inp.value||'0',10);
-        total += (Number(catalog[name]||0) * q);
+      Object.entries(state.quantities).forEach(([name, q])=>{
+        total += (Number(state.catalog[name]||0) * Number(q||0));
       });
       document.getElementById('est').textContent = fmtCOP(total);
     }
 
-    function showNotice(html, type='info'){
-      const box = document.getElementById('result');
-      box.className = `alert ${type}`; box.style.display='block'; box.innerHTML = html;
-    }
-
     async function showActivePromo(){
-      const res = await fetch(`/orders/promotions/active?cuisine=${encodeURIComponent(selCuisine())}`);
-      const p = await res.json().catch(()=>null);
+      const r = await fetch(`/orders/promotions/active?cuisine=${encodeURIComponent(selCuisine())}`, { cache:'no-store' });
+      const p = await r.json().catch(()=>null);
       const box = document.getElementById('promoBanner');
       if(!p || !p.active){
-        box.style.display='none'; box.innerHTML=''; return;
+        box.style.display = 'none'; box.innerHTML = ''; return;
       }
       if(p.type === 'DESCUENTO'){
         box.className = 'alert info';
-        box.innerHTML = `🔥 Promoción activa: <b>${Math.round(p.percent*100)}% OFF</b> en toda la cocina.`;
+        box.innerHTML = `🔥 Promoción activa: <b>${Math.round((p.percent||0)*100)}% OFF</b> en toda la cocina.`;
       }else if(p.type === '2X1'){
         box.className = 'alert info';
         box.innerHTML = `🔥 Promoción activa: <b>2x1</b> en <b>${p.product}</b>.`;
+      }else{
+        box.className = 'alert info';
+        box.innerHTML = `🔥 Promoción activa.`;
       }
-      box.style.display='block';
+      box.style.display = 'block';
     }
 
-    // ===== Tracking de estado del último pedido =====
-    function showOrderStatus(html, type='info'){
-      const box = document.getElementById('orderStatus');
-      box.className = `alert ${type}`; box.style.display='block'; box.innerHTML = html;
-    }
-    function clearOrderStatus(){
-      const box = document.getElementById('orderStatus');
-      box.style.display = 'none'; box.innerHTML = '';
-    }
-
-    function startTracking(orderId){
-      lastOrderId = orderId;
-      clearInterval(watchTimer);
-      showOrderStatus('⏳ Esperando respuesta del restaurante...', 'info');
-
-      // Consulta cada 2s si hay factura o rechazo para ese orderId
-      watchTimer = setInterval(async ()=>{
-        // 1) ¿hay factura?
-        const fRes = await fetch(`/invoices/order/${encodeURIComponent(orderId)}`);
-        if (fRes.ok){
-          const factura = await fRes.json();
-          if (factura && factura.id){ // llegó factura
-            showOrderStatus(
-              `✅ Pedido <b>ACEPTADO</b>.<br>
-               <b>Factura</b> — Subtotal: ${fmtCOP(factura.subtotal)}, IVA: ${fmtCOP(factura.tax)}, Total: <b>${fmtCOP(factura.total)}</b>`,
-              'ok'
-            );
-            clearInterval(watchTimer);
-            loadInvoices(); // refresca tabla
-            return;
-          }
-        }
-
-        // 2) ¿hay notificación de rechazo?
-        const nRes = await fetch(`/notifications/order/${encodeURIComponent(orderId)}`);
-        if (nRes.ok){
-          const notif = await nRes.json();
-          if (notif && notif.tipo === 'DENEGADO'){
-            showOrderStatus(`❌ Pedido <b>DENEGADO</b> — ${notif.mensaje}`, 'err');
-            clearInterval(watchTimer);
-            loadNotifications(); // refresca lista
-            return;
-          }
-        }
-      }, 2000);
-    }
-
-    // ===== Eventos principales =====
     document.getElementById('cuisine').addEventListener('change', ()=>{
-      clearOrderStatus();
+      // conservamos cantidades solo para los productos de la nueva cocina
+      state.quantities = {};
       loadCatalog();
     });
 
-    document.getElementById('send').addEventListener('click', async ()=>{
-      const customerName = document.getElementById('customerName').value.trim();
-      if(!customerName){ showNotice('⚠️ Escribe tu nombre','err'); return; }
+    // Refresco automático del catálogo/promo (sin perder cantidades)
+    if (state.refreshCatalogTimer) clearInterval(state.refreshCatalogTimer);
+    state.refreshCatalogTimer = setInterval(loadCatalog, 5000);
 
-      const items=[]; qtyInputs().forEach(inp=>{
-        const q = parseInt(inp.value||'0',10); for(let i=0;i<q;i++) items.push(inp.dataset.name);
+    // ========= Envío de pedido & seguimiento =========
+    function showSent(orderId){
+      const sent = document.getElementById('sentMsg');
+      const wait = document.getElementById('pendingMsg');
+      sent.innerHTML = `Pedido enviado ✅ (ID: <b>${orderId}</b>).<br>Esperando confirmación del restaurante…`;
+      sent.style.display = 'block';
+      wait.style.display = 'block';
+      document.getElementById('finalMsg').style.display = 'none';
+    }
+    function hidePendingMessages(){
+      const p = document.getElementById('pendingMsg');
+      const s = document.getElementById('sentMsg');
+      if (p) p.style.display = 'none';
+      if (s) s.style.display = 'none';
+    }
+
+    async function sendOrder(){
+      if(!state.user){ alert('Primero inicia sesión.'); return; }
+
+      // Construir items desde cantidades
+      const items = [];
+      Object.entries(state.quantities).forEach(([name, q])=>{
+        const n = Number(q||0);
+        for(let i=0;i<n;i++) items.push(name);
       });
-      if(items.length===0){ showNotice('⚠️ Selecciona al menos un producto','err'); return; }
+      if(items.length===0){ alert('Selecciona al menos un producto.'); return; }
 
-      const res = await fetch('/orders',{ method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({customerName, items, cuisine: selCuisine()}) });
-      const data = await res.json();
+      const body = { customerName: state.user, items, cuisine: selCuisine() };
+      const res = await fetch('/orders', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(()=>null);
+      if(!data || !data.orderId){
+        alert('No se pudo enviar el pedido.');
+        return;
+      }
 
-      showNotice(`Pedido enviado ✅ (ID: <b>${data.orderId}</b>).<br>Esperando confirmación del restaurante...`,'ok');
+      // Mostrar enviado y empezar polling
+      showSent(data.orderId);
+      startOrderPolling(data.orderId);
 
-      // Comienza a trackear esta orden para mostrar factura/denegación
-      startTracking(data.orderId);
+      // (opcional) deja las cantidades como están, o limpia:
+      // state.quantities = {}; buildCatalog();
+    }
 
-      // Limpia cantidades
-      qtyInputs().forEach(inp => inp.value = '0'); updateEstimate();
-    });
+    document.getElementById('send').addEventListener('click', sendOrder);
 
-    // ===== Facturas (lista) =====
-    async function loadInvoices(){
+    // ========= Polling robusto (notificación/factura) =========
+    function startOrderPolling(orderId){
+      stopOrderPolling();
+      state.activeOrderId = orderId;
+      checkOrderStatus();                           // primer chequeo inmediato
+      state.pollTimer = setInterval(checkOrderStatus, 2500);
+    }
+    function stopOrderPolling(){
+      if (state.pollTimer){
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+    }
+
+    async function checkOrderStatus(){
+      const id = state.activeOrderId;
+      if (!id) return;
+
       try{
-        const res = await fetch('/invoices');
-        const invoices = await res.json();
-        const tb = document.getElementById('tbInvoices'); tb.innerHTML = '';
-        if(!Array.isArray(invoices) || invoices.length===0){
-          tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:14px">No hay facturas</td></tr>';
+        const notifReq = fetch(`/notifications/order/${id}`, { cache:'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .catch(()=>null);
+        const invReq = fetch(`/invoices/order/${id}`, { cache:'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .catch(()=>null);
+
+        const [notif, invoice] = await Promise.all([notifReq, invReq]);
+
+        // Factura => aceptado
+        if (invoice && invoice.orderId){
+          hidePendingMessages();
+          const f = document.getElementById('finalMsg');
+          f.className = 'alert ok';
+          f.innerHTML = `✅ Pedido <b>${invoice.orderId}</b> confirmado por el restaurante.<br>
+                         Subtotal: <b>${fmtCOP(invoice.subtotal)}</b> — IVA: <b>${fmtCOP(invoice.tax)}</b> — Total: <b>${fmtCOP(invoice.total)}</b>`;
+          f.style.display = 'block';
+          stopOrderPolling();
           return;
         }
-        invoices.forEach(inv=>{
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${inv.orderId}</td>
-            <td>${inv.customerName}</td>
-            <td class="right">${fmtCOP(inv.subtotal)}</td>
-            <td class="right">${fmtCOP(inv.tax)}</td>
-            <td class="right">${fmtCOP(inv.total)}</td>`;
-          tb.appendChild(tr);
-        });
-      }catch(e){/* noop */}
-    }
-    document.getElementById('refreshInvoices').onclick = loadInvoices;
 
-    // ===== Notificaciones (lista) =====
-    async function loadNotifications(){
-      try{
-        const res = await fetch('/notifications');
-        const list = await res.json();
-        const box = document.getElementById('notificationsList');
-        box.innerHTML = '';
-        if(!Array.isArray(list) || list.length===0){
-          box.innerHTML = '<div style="text-align:center; color:var(--muted); padding:12px">No hay notificaciones</div>';
-          return;
+        // Notificación => aceptado/denegado
+        if (notif && (notif.orderId || notif.pedidoId || notif.id)){
+          const status = (notif.status || notif.estado || '').toUpperCase();
+
+          if (status === 'ACEPTADO' || status === 'APROBADO' || status === 'CONFIRMADO'){
+            hidePendingMessages();
+            const f = document.getElementById('finalMsg');
+            f.className = 'alert ok';
+            f.innerHTML = `✅ Pedido <b>${notif.orderId || id}</b> confirmado por el restaurante.`;
+            f.style.display = 'block';
+            stopOrderPolling();
+            return;
+          }
+          if (status === 'DENEGADO' || status === 'RECHAZADO'){
+            hidePendingMessages();
+            const f = document.getElementById('finalMsg');
+            f.className = 'alert err';
+            f.innerHTML = `❌ Pedido <b>${notif.orderId || id}</b> fue denegado por el restaurante.`;
+            f.style.display = 'block';
+            stopOrderPolling();
+            return;
+          }
         }
-        list.forEach(n=>{
-          const div = document.createElement('div');
-          const isDenied = n.tipo === 'DENEGADO';
-          div.className = `alert ${isDenied ? 'err' : 'ok'}`;
-          div.innerHTML = `
-            <strong>${isDenied ? '❌ Pedido Rechazado' : '✅ Pedido Aceptado'}</strong><br>
-            <span style="font-size:14px">Pedido ID: ${n.orderId}</span><br>
-            <span>${n.mensaje||''}</span>`;
-          box.appendChild(div);
-        });
-      }catch(e){/* noop */}
+
+        // Si no hay veredicto, seguimos esperando
+      }catch(e){
+        console.warn('checkOrderStatus error', e);
+      }
     }
-    document.getElementById('refreshNotifications').onclick = loadNotifications;
 
-    // ===== Auto-refresh ligero =====
-    setInterval(()=>{ loadCatalog(); }, 5000);
-    setInterval(()=>{ loadInvoices(); loadNotifications(); }, 6000);
-
-    // Inicial
+    // ========= Inicial =========
     loadCatalog();
-    loadInvoices();
-    loadNotifications();
 </script>
 </body>
 </html>

@@ -1,2 +1,3 @@
 
-m	java:S106"+Replace this use of System.out by a logger.(ÏË¶8Â¨ß3J$3e071788-f76b-4ff8-9633-56a08ea201b8
+|
+java:S1128"9Remove this unused import 'co.vinni.config.RabbitConfig'.(Ÿ€¤š8ÊÏ¿’¡3J$6c6568a6-758d-4895-be31-b3c70ed2d265

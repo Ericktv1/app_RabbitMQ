@@ -18,13 +18,14 @@ public class PromotionInboxService {
     public void onPromo(Promotion promo) {
         System.out.println("🎁 Promo recibida: " + promo);
         if (promo.isActive()) {
-            active.put(promo.getCuisine(), promo);
+            active.put(promo.getCuisine().toUpperCase(), promo);
+
         } else {
             active.remove(promo.getCuisine());
         }
     }
 
     public Optional<Promotion> getActive(String cuisine) {
-        return Optional.ofNullable(active.get(cuisine));
+        return Optional.ofNullable(active.get(cuisine == null ? null : cuisine.toUpperCase()));
     }
 }

@@ -1,68 +1,77 @@
 package co.vinni.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 
 @Configuration
-@EnableRabbit
 public class RabbitConfig {
 
-    // --- DIRECT (si lo usas para enrutar pedidos por cocina) ---
-    public static final String EXCHANGE_KITCHEN = "kitchen-exchange";
-    public static final String RK_ITALIANA = "italiana";
-    public static final String RK_ASIATICA  = "asiatica";
+    // === Topic para enviar pedidos ===
+    public static final String EXCHANGE_KITCHEN_TOPIC = "kitchen-topic";
 
-    // --- FANOUT (promociones) ---
-    public static final String PROMO_FANOUT_NAME   = "promo-fanout";   // único exchange
-    public static final String PROMO_QUEUE_NAME    = "promo-queue";    // cola local del cliente
-
-    // --- “legacy” (respuestas del restaurante) ---
-    public static final String QUEUE_FACTURAS       = "factura-queue";
-    public static final String QUEUE_NOTIFICACIONES = "notificacion-queue";
-
-    // ============ Exchanges ============
     @Bean
-    public DirectExchange kitchenExchange() {
-        // el Productor publica a este exchange si enrutas por cocina; no crees colas aquí
-        return new DirectExchange(EXCHANGE_KITCHEN, true, false);
+    public TopicExchange kitchenTopicExchange() {
+        return new TopicExchange(EXCHANGE_KITCHEN_TOPIC, true, false);
     }
 
-    @Bean
+    // === Fanouts que escucha el cliente ===
+    @Bean(name = "notificacionesFanout")
+    public FanoutExchange notificacionesFanout() {
+        return new FanoutExchange("notificaciones.fanout", true, false);
+    }
+
+    @Bean(name = "facturasFanout")
+    public FanoutExchange facturasFanout() {
+        return new FanoutExchange("facturas.fanout", true, false);
+    }
+
+    @Bean(name = "promoFanout")
     public FanoutExchange promoFanout() {
-        // ÚNICO fanout para promos
-        return new FanoutExchange(PROMO_FANOUT_NAME, true, false);
+        return new FanoutExchange("promo-fanout", true, false);
     }
 
-    // ============ Cola + binding de promociones (fanout) ============
-    @Bean(name = "promoClientQueue")
-    public Queue promoClientQueue() {
-        // única cola local para escuchar promociones
-        return new Queue(PROMO_QUEUE_NAME, true);
-    }
-
-    @Bean
-    public Binding promoBinding(@Qualifier("promoClientQueue") Queue promoClientQueue,
-                                FanoutExchange promoFanout) {
-        // IMPORTANTÍSIMO: @Qualifier elimina la ambigüedad de múltiples Queue beans
-        return BindingBuilder.bind(promoClientQueue).to(promoFanout);
-    }
-
-    // ============ Colas para facturas y notificaciones ============
-    @Bean
+    // === Colas para escuchar mensajes del restaurante ===
+    @Bean(name = "facturaQueue")
     public Queue facturaQueue() {
-        return new Queue(QUEUE_FACTURAS, true);
+        return new Queue("factura-queue", true);
+    }
+
+    @Bean(name = "notificacionQueue")
+    public Queue notificacionQueue() {
+        return new Queue("notificacion-queue", true);
+    }
+
+    @Bean(name = "promoQueue")
+    public Queue promoQueue() {
+        return new Queue("promo-queue", true);
+    }
+
+    // === Bindings ===
+    @Bean
+    public Binding bindFacturas(
+            @Qualifier("facturasFanout") FanoutExchange facturasFanout,
+            @Qualifier("facturaQueue") Queue facturaQueue) {
+        return BindingBuilder.bind(facturaQueue).to(facturasFanout);
     }
 
     @Bean
-    public Queue notificacionQueue() {
-        return new Queue(QUEUE_NOTIFICACIONES, true);
+    public Binding bindNotificaciones(
+            @Qualifier("notificacionesFanout") FanoutExchange notificacionesFanout,
+            @Qualifier("notificacionQueue") Queue notificacionQueue) {
+        return BindingBuilder.bind(notificacionQueue).to(notificacionesFanout);
     }
 
-    // ============ Converter JSON ============
+    @Bean
+    public Binding bindPromos(
+            @Qualifier("promoFanout") FanoutExchange promoFanout,
+            @Qualifier("promoQueue") Queue promoQueue) {
+        return BindingBuilder.bind(promoQueue).to(promoFanout);
+    }
+
+    // === Converter JSON ===
     @Bean
     public Jackson2JsonMessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
