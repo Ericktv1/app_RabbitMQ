@@ -97,22 +97,18 @@
     const fmtCOP = n => Number(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
     const selCuisine = () => document.getElementById('cuisine').value;
 
-    // ========= Estado global seguro =========
+    // ========= Estado global =========
     const state = {
       user: null,
-      catalog: {},             // { item: price }
-      quantities: {},          // { item: qty } persistente mientras se refresca el catálogo
+      catalog: {},
+      quantities: {},
       refreshCatalogTimer: null,
       activeOrderId: null,
       pollTimer: null
     };
 
-    // ========= Login sencillo (3 usuarios fijos) =========
-    const USERS = {
-      erick:  '123',
-      jeison: '456',
-      arelis: '789'
-    };
+    // ========= Login sencillo =========
+    const USERS = { erick:'123', jeison:'456', arelis:'789' };
 
     function setUser(u){
       state.user = u || null;
@@ -121,7 +117,6 @@
       document.getElementById('btnLogin').style.display  = state.user ? 'none' : 'inline-block';
       document.getElementById('btnLogout').style.display = state.user ? 'inline-block' : 'none';
     }
-    // on load
     setUser(sessionStorage.getItem('clientUser'));
 
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
@@ -136,7 +131,6 @@
     document.getElementById('btnLogout').addEventListener('click', ()=>{
       stopOrderPolling();
       setUser(null);
-      // limpiar mensajes
       document.getElementById('sentMsg').style.display = 'none';
       document.getElementById('pendingMsg').style.display = 'none';
       document.getElementById('finalMsg').style.display = 'none';
@@ -147,14 +141,11 @@
     });
 
     // ========= Catálogo / Promos =========
-    function qtyInputs(){ return document.querySelectorAll('#catalog .qty input'); }
-
     function buildCatalog(){
       const grid = document.getElementById('catalog');
       grid.innerHTML = '';
 
       Object.entries(state.catalog).forEach(([name, price])=>{
-        // Mantener qty existente
         const q = Number(state.quantities[name] || 0);
 
         const el = document.createElement('div');
@@ -196,7 +187,6 @@
       const res = await fetch(`/orders/catalog?cuisine=${encodeURIComponent(selCuisine())}`, { cache:'no-store' });
       state.catalog = await res.json();
 
-      // Reconciliar cantidades con el nuevo catálogo (por si un producto no existe)
       const newQuantities = {};
       Object.keys(state.catalog).forEach(name => newQuantities[name] = state.quantities[name] || 0);
       state.quantities = newQuantities;
@@ -234,16 +224,14 @@
     }
 
     document.getElementById('cuisine').addEventListener('change', ()=>{
-      // conservamos cantidades solo para los productos de la nueva cocina
       state.quantities = {};
       loadCatalog();
     });
 
-    // Refresco automático del catálogo/promo (sin perder cantidades)
     if (state.refreshCatalogTimer) clearInterval(state.refreshCatalogTimer);
     state.refreshCatalogTimer = setInterval(loadCatalog, 5000);
 
-    // ========= Envío de pedido & seguimiento =========
+    // ========= Envío & seguimiento =========
     function showSent(orderId){
       const sent = document.getElementById('sentMsg');
       const wait = document.getElementById('pendingMsg');
@@ -262,7 +250,6 @@
     async function sendOrder(){
       if(!state.user){ alert('Primero inicia sesión.'); return; }
 
-      // Construir items desde cantidades
       const items = [];
       Object.entries(state.quantities).forEach(([name, q])=>{
         const n = Number(q||0);
@@ -282,21 +269,17 @@
         return;
       }
 
-      // Mostrar enviado y empezar polling
       showSent(data.orderId);
       startOrderPolling(data.orderId);
-
-      // (opcional) deja las cantidades como están, o limpia:
-      // state.quantities = {}; buildCatalog();
     }
 
     document.getElementById('send').addEventListener('click', sendOrder);
 
-    // ========= Polling robusto (notificación/factura) =========
+    // ========= Polling (corregido para notif.tipo) =========
     function startOrderPolling(orderId){
       stopOrderPolling();
       state.activeOrderId = orderId;
-      checkOrderStatus();                           // primer chequeo inmediato
+      checkOrderStatus(); // primer chequeo inmediato
       state.pollTimer = setInterval(checkOrderStatus, 2500);
     }
     function stopOrderPolling(){
@@ -311,16 +294,16 @@
       if (!id) return;
 
       try{
-        const notifReq = fetch(`/notifications/order/${id}`, { cache:'no-store' })
+        const notifReq = fetch(`/notifications/order/${encodeURIComponent(id)}`, { cache:'no-store' })
           .then(r => r.ok ? r.json() : null)
           .catch(()=>null);
-        const invReq = fetch(`/invoices/order/${id}`, { cache:'no-store' })
+        const invReq = fetch(`/invoices/order/${encodeURIComponent(id)}`, { cache:'no-store' })
           .then(r => r.ok ? r.json() : null)
           .catch(()=>null);
 
         const [notif, invoice] = await Promise.all([notifReq, invReq]);
 
-        // Factura => aceptado
+        // 1) Factura => ACEPTADO definitivo
         if (invoice && invoice.orderId){
           hidePendingMessages();
           const f = document.getElementById('finalMsg');
@@ -332,11 +315,11 @@
           return;
         }
 
-        // Notificación => aceptado/denegado
-        if (notif && (notif.orderId || notif.pedidoId || notif.id)){
-          const status = (notif.status || notif.estado || '').toUpperCase();
+        // 2) Notificación => usa notif.tipo (ACEPTADO | DENEGADO)
+        if (notif && (notif.tipo || notif.orderId)){
+          const tipo = String(notif.tipo || '').toUpperCase();
 
-          if (status === 'ACEPTADO' || status === 'APROBADO' || status === 'CONFIRMADO'){
+          if (tipo === 'ACEPTADO'){
             hidePendingMessages();
             const f = document.getElementById('finalMsg');
             f.className = 'alert ok';
@@ -345,7 +328,7 @@
             stopOrderPolling();
             return;
           }
-          if (status === 'DENEGADO' || status === 'RECHAZADO'){
+          if (tipo === 'DENEGADO'){
             hidePendingMessages();
             const f = document.getElementById('finalMsg');
             f.className = 'alert err';
@@ -356,7 +339,7 @@
           }
         }
 
-        // Si no hay veredicto, seguimos esperando
+        // 3) Si no hay veredicto, seguimos esperando
       }catch(e){
         console.warn('checkOrderStatus error', e);
       }

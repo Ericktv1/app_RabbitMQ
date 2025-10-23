@@ -11,27 +11,18 @@
           --ok:#19c37d; --danger:#ff6b6b; --warn:#ffc857;
           --radius:18px; --shadow:0 12px 30px rgba(0,0,0,.35);
         }
-        body {
-          margin:0;
-          font-family:ui-sans-serif,system-ui;
-          background:linear-gradient(180deg,#0a0f23 0%,#0b1020 100%);
-          color:var(--text);
-        }
+        body { margin:0; font-family:ui-sans-serif,system-ui; background:linear-gradient(180deg,#0a0f23 0%,#0b1020 100%); color:var(--text); }
         .container { max-width:1100px;margin:24px auto;padding:0 16px;display:flex;flex-direction:column;gap:22px }
         h1 { margin:0 0 6px 0; font-size:26px }
-        .card { background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%);
-                border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+        .card { background:linear-gradient(180deg,#0e1540 0%, #0d1335 100%); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
         .panel { padding:16px 18px }
         .toolbar { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;flex-wrap:wrap }
         .left { display:flex;align-items:center;gap:12px;flex-wrap:wrap }
-        .select,.btn { appearance:none; border:1px solid var(--border);
-                       background:linear-gradient(180deg,#16245d,#0d1745);
-                       color:var(--text); padding:10px 14px; border-radius:12px; font-weight:700; }
+        .select,.btn { appearance:none; border:1px solid var(--border); background:linear-gradient(180deg,#16245d,#0d1745); color:var(--text); padding:10px 14px; border-radius:12px; font-weight:700; }
         .btn { cursor:pointer }
         .btn.ok { background:linear-gradient(180deg,#2fe09d,#19c37d); color:#041d12; border:none }
         .btn.danger { background:linear-gradient(180deg,#ff817e,#ff6b6b); color:#2b0606; border:none }
-        .btn.warn { background:linear-gradient(180deg,#ffc857,#f0a91b); color:#2a1e02; border:none }
-        .btn.ghost { background:rgba(255,255,255,.06); border:1px solid var(--border); }
+        .btn.ghost { background:rgba(255,255,255,.06); border:1px solid var(--border) }
         table { width:100%; border-collapse:collapse; border-radius:14px }
         th,td { padding:12px 10px; border-bottom:1px solid var(--border) }
         th { background:rgba(255,255,255,.04); text-align:left }
@@ -44,8 +35,6 @@
         .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border) }
         .alert { padding:10px 12px; border-radius:10px; margin-bottom:12px }
         .alert.info { background:rgba(106,164,255,.15); border:1px solid rgba(106,164,255,.35) }
-        .alert.ok { background:rgba(25,195,125,.12); border:1px solid rgba(25,195,125,.35) }
-        .alert.err { background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35) }
     </style>
 </head>
 <body>
@@ -60,7 +49,7 @@
         </div>
     </header>
 
-    <!-- PROMOCIONES -->
+    <!-- PROMOCIONES (ADMIN) -->
     <section id="secPromos" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
@@ -86,7 +75,7 @@
         </div>
     </section>
 
-    <!-- PEDIDOS -->
+    <!-- PEDIDOS (ADMIN) -->
     <section id="secOrders" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
@@ -100,16 +89,16 @@
         </div>
     </section>
 
-    <!-- FACTURAS -->
+    <!-- FACTURAS (ADMIN) -->
     <section id="secInvoices" class="card" style="display:none">
         <div class="panel">
-            <div class="toolbar"><h1>Facturas</h1><button id="refreshInvoices" class="btn">Actualizar</button></div>
+            <div class="toolbar"><h1>🧾 Facturas</h1><button id="refreshInvoices" class="btn">Actualizar</button></div>
             <table><thead><tr><th>OrdenID</th><th>Cliente</th><th class="right">Subtotal</th><th class="right">IVA</th><th class="right">Total</th></tr></thead>
                 <tbody id="tbInvoices"></tbody></table>
         </div>
     </section>
 
-    <!-- VENTAS -->
+    <!-- VENTAS (ADMIN) -->
     <section id="secSales" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar"><h1>💰 Ventas registradas</h1><button id="refreshSales" class="btn">Actualizar</button></div>
@@ -134,91 +123,202 @@
     const ROLE = {ADMIN:'admin', REPA:'repartidor'};
     let role=null, user=null;
 
-    // === LOGIN ===
+    const cuisineEl = document.getElementById('cuisine');
+    const promoTypeEl = document.getElementById('promoType');
+    const product2x1El = document.getElementById('product2x1');
+
+    function getCuisine(){ return cuisineEl.value; }
+    function setTitle(){ document.getElementById('titleCuisine').textContent = (getCuisine()==='ASIATICA'?'Cocina Asiática':'Cocina Italiana'); }
+
     document.getElementById('btnLogin').onclick = ()=>{
       const u = prompt('Usuario (admin/repartidor):')?.trim().toLowerCase();
       if(!u) return;
       const p = prompt('Contraseña:');
-      if((u==='admin' && p==='123')||(u==='repartidor'&&p==='456')){
-        role=u==='admin'?ROLE.ADMIN:ROLE.REPA;
-        user=u;
-        setRole(role);
-      }else alert('Credenciales inválidas');
+      if((u==='admin'&&p==='123')||(u==='repartidor'&&p==='456')){ role=u==='admin'?ROLE.ADMIN:ROLE.REPA; user=u; setRole(role); }
+      else alert('Credenciales inválidas');
     };
-    document.getElementById('btnLogout').onclick = ()=>{location.reload();};
+    document.getElementById('btnLogout').onclick = ()=>location.reload();
 
-    // === RENDER DE ROLES ===
     function setRole(r){
-      document.getElementById('role').textContent=r;
-      document.getElementById('user').textContent=user;
+      document.getElementById('role').textContent=r||'—';
+      document.getElementById('user').textContent=user||'—';
       document.getElementById('btnLogin').style.display='none';
       document.getElementById('btnLogout').style.display='inline-block';
-      // mostrar secciones
       document.getElementById('secPromos').style.display = (r===ROLE.ADMIN)?'block':'none';
       document.getElementById('secOrders').style.display = (r===ROLE.ADMIN)?'block':'none';
       document.getElementById('secInvoices').style.display = (r===ROLE.ADMIN)?'block':'none';
       document.getElementById('secSales').style.display = (r===ROLE.ADMIN)?'block':'none';
       document.getElementById('secDelivery').style.display = (r===ROLE.REPA)?'block':'none';
-      if(r===ROLE.ADMIN){ loadOrders(); loadInvoices(); loadSales(); refreshState(); }
+      if(r===ROLE.ADMIN){ refreshAdmin(); }
       if(r===ROLE.REPA){ loadReadyOrders(); loadRepaPromo(); }
+      startAutoRefresh();
     }
 
-    // === ADMIN: PEDIDOS ===
+    // ====== PROMOS (ADMIN) ======
+    const MENU = { ITALIANA: ["Pasta","Pizza","Tiramisu"], ASIATICA: ["Ramen","Sushi","Bao"] };
+    function render2x1Options(){
+      const items = MENU[getCuisine()]||[];
+      product2x1El.innerHTML = '<option value="" disabled selected>Selecciona un producto</option>' +
+        items.map(i=>`<option value="${i}">${i}</option>`).join('');
+    }
+    promoTypeEl.addEventListener('change',()=>{
+      const show = promoTypeEl.value==='2X1';
+      product2x1El.style.display = show?'inline-block':'none';
+      if(show) render2x1Options();
+    });
+    document.getElementById('btnActivate').onclick = async ()=>{
+      const c = getCuisine();
+      let url = (promoTypeEl.value==='DESCUENTO')
+        ? `/promotions/${c}/activate/discount20`
+        : `/promotions/${c}/activate/twoforone?product=${encodeURIComponent(product2x1El.value||'')}`;
+      const r = await fetch(url,{method:'POST', cache:'no-store'});
+      const data = await r.json().catch(()=>({message:'OK'}));
+      document.getElementById('promoMsg').textContent = data.message || 'OK';
+      refreshState();
+    };
+    document.getElementById('btnDeactivate').onclick = async ()=>{
+      const c = getCuisine();
+      const r = await fetch(`/promotions/${c}/deactivate`,{method:'POST', cache:'no-store'});
+      const data = await r.json().catch(()=>({message:'OK'}));
+      document.getElementById('promoMsg').textContent = data.message || 'OK';
+      refreshState();
+    };
+    async function refreshState(){
+      const r = await fetch(`/promotions/status?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
+      const p = await r.json().catch(()=>null);
+      const el = document.getElementById('promoState');
+      if(!p || !p.active){ el.textContent='Inactiva'; return; }
+      el.textContent = (p.type==='DESCUENTO') ? `ACTIVA — ${Math.round((p.percent||0)*100)}% OFF (${p.cuisine})`
+                                              : `ACTIVA — 2x1 en ${p.product} (${p.cuisine})`;
+    }
+
+    // ====== PEDIDOS (ADMIN) ======
+    document.getElementById('refreshOrders').onclick = loadOrders;
     async function loadOrders(){
-      const res=await fetch('/orders/pending?cuisine=ITALIANA'); const data=await res.json();
-      const tb=document.getElementById('tbOrders'); tb.innerHTML='';
-      if(!data.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted)">No hay pedidos</td></tr>';return;}
+      const res = await fetch(`/orders/pending?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
+      const data = await res.json().catch(()=>[]);
+      const tb = document.getElementById('tbOrders'); tb.innerHTML='';
+      if(!Array.isArray(data)||data.length===0){
+        tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px">No hay pedidos pendientes</td></tr>'; return;
+      }
       data.forEach(o=>{
-        tb.innerHTML+=`<tr><td>${o.id}</td><td>${o.customerName}</td><td><span class="pill">${o.cuisine}</span></td><td>${o.items.join(', ')}</td>
-        <td class="right">${fmtCOP(o.total)}</td><td><span class="badge ${o.status}">${o.status}</span></td>
-        <td class="right"><button class="btn ok" onclick="act('${o.id}',true)">Aceptar</button>
-        <button class="btn danger" onclick="act('${o.id}',false)">Denegar</button></td></tr>`;
+        tb.innerHTML += `
+          <tr>
+            <td>${o.id}</td><td>${o.customerName}</td>
+            <td><span class="pill">${o.cuisine||'-'}</span></td>
+            <td>${(o.items||[]).join(', ')}</td>
+            <td class="right">${fmtCOP(o.total)}</td>
+            <td><span class="badge ${o.status}">${o.status}</span></td>
+            <td class="right">
+              <button class="btn ok" onclick="act('${o.id}',true)">Aceptar</button>
+              <button class="btn danger" onclick="act('${o.id}',false)">Denegar</button>
+            </td>
+          </tr>`;
       });
     }
-    async function act(id,ok){await fetch(`/orders/${id}/${ok?'accept':'deny'}`,{method:'POST'});loadOrders();loadInvoices();}
+    async function act(id, ok){
+      await fetch(`/orders/${id}/${ok?'accept':'deny'}`,{method:'POST', cache:'no-store'});
+      await loadOrders(); await loadInvoices();
+    }
 
-    // === ADMIN: FACTURAS ===
+    // ====== FACTURAS (ADMIN) ======
+    document.getElementById('refreshInvoices').onclick = loadInvoices;
     async function loadInvoices(){
-      const r=await fetch('/invoices?cuisine=ITALIANA'); const data=await r.json();
-      const tb=document.getElementById('tbInvoices'); tb.innerHTML='';
-      if(!data.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay facturas</td></tr>';return;}
-      data.forEach(i=>tb.innerHTML+=`<tr><td>${i.orderId}</td><td>${i.customerName}</td>
-      <td class="right">${fmtCOP(i.subtotal)}</td><td class="right">${fmtCOP(i.tax)}</td><td class="right">${fmtCOP(i.total)}</td></tr>`);
+      const r = await fetch(`/invoices?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbInvoices'); tb.innerHTML='';
+      if(!Array.isArray(data)||data.length===0){
+        tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No hay facturas</td></tr>'; return;
+      }
+      data.forEach(i=>{
+        tb.innerHTML += `
+          <tr>
+            <td>${i.orderId}</td><td>${i.customerName}</td>
+            <td class="right">${fmtCOP(i.subtotal)}</td>
+            <td class="right">${fmtCOP(i.tax)}</td>
+            <td class="right">${fmtCOP(i.total)}</td>
+          </tr>`;
+      });
     }
 
-    // === ADMIN: PROMOS ===
-    async function refreshState(){
-      const c='ITALIANA'; const r=await fetch(`/promotions/status?cuisine=${c}`); const p=await r.json(); const s=document.getElementById('promoState');
-      s.textContent=p.active?`Activa: ${p.type==='DESCUENTO'?Math.round(p.percent*100)+'% OFF':'2x1 en '+p.product}`:'Inactiva';
-    }
-
-    // === ADMIN: VENTAS ===
+    // ====== VENTAS (ADMIN) ======
+    document.getElementById('refreshSales').onclick = loadSales;
     async function loadSales(){
-      const r=await fetch('/sales'); const data=await r.json();
-      const tb=document.getElementById('tbSales'); tb.innerHTML='';
-      if(!data.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay ventas</td></tr>';return;}
-      data.forEach(v=>tb.innerHTML+=`<tr><td>${v.orderId}</td><td>${v.customerName}</td><td class="right">${fmtCOP(v.total)}</td>
-      <td>${v.pagado?'✅':'❌'}</td><td>${v.repartidor}</td></tr>`);
+      const r = await fetch('/sales',{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbSales'); tb.innerHTML='';
+      if(!Array.isArray(data)||data.length===0){
+        tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No hay ventas</td></tr>'; return;
+      }
+      data.forEach(v=>{
+        tb.innerHTML += `<tr>
+          <td>${v.orderId}</td><td>${v.customerName||'-'}</td>
+          <td class="right">${fmtCOP(v.total||0)}</td><td>${v.pagado?'✅':'❌'}</td><td>${v.repartidor||'-'}</td>
+        </tr>`;
+      });
     }
 
-    // === REPARTIDOR ===
+    // ====== REPARTIDOR ======
+    document.getElementById('refreshDelivery').onclick = loadReadyOrders;
     async function loadReadyOrders(){
-      const r=await fetch('/delivery/ready'); const data=await r.json();
-      const tb=document.getElementById('tbDelivery'); tb.innerHTML='';
-      if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay pedidos</td></tr>';return;}
-      data.forEach(o=>tb.innerHTML+=`<tr><td>${o.id}</td><td>${o.customerName}</td><td><span class="pill">${o.cuisine}</span></td>
-      <td>${o.items.join(', ')}</td><td class="right">${fmtCOP(o.total)}</td>
-      <td><button class="btn ok" onclick="markPaid('${o.id}',true)">Pagado</button>
-      <button class="btn danger" onclick="markPaid('${o.id}',false)">No pagado</button></td></tr>`);
+      const r = await fetch('/delivery/ready',{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbDelivery'); tb.innerHTML='';
+      if(!Array.isArray(data)||data.length===0){
+        tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">No hay pedidos</td></tr>'; return;
+      }
+      data.forEach(o=>{
+        tb.innerHTML += `<tr>
+          <td>${o.id}</td><td>${o.customerName}</td>
+          <td><span class="pill">${o.cuisine||'-'}</span></td>
+          <td>${(o.items||[]).join(', ')}</td>
+          <td class="right">${fmtCOP(o.total)}</td>
+          <td>
+            <button class="btn ok" onclick="markPaid('${o.id}',true)">Pagado</button>
+            <button class="btn danger" onclick="markPaid('${o.id}',false)">No pagado</button>
+          </td>
+        </tr>`;
+      });
     }
-    async function markPaid(id,paid){await fetch(`/delivery/${id}/pay?paid=${paid}&who=${user}`,{method:'POST'});loadReadyOrders();}
+    async function markPaid(id,paid){
+      await fetch(`/delivery/${encodeURIComponent(id)}/pay?paid=${paid}&who=${encodeURIComponent(user||'repartidor')}`,{method:'POST', cache:'no-store'});
+      await loadReadyOrders();
+    }
 
-    // === REPARTIDOR: PROMOS ===
+    // ====== PROMO REPATIDOR (desde promo-repa-queue) ======
     async function loadRepaPromo(){
-      const c='ITALIANA'; const r=await fetch(`/delivery/promotions/status?cuisine=${c}`); const p=await r.json(); const b=document.getElementById('repaPromoBanner');
-      if(!p.active){b.style.display='none';return;}
-      b.innerHTML=p.type==='DESCUENTO'?`🔥 ${Math.round(p.percent*100)}% OFF en ${p.cuisine}`:`🔥 2x1 en ${p.product} (${p.cuisine})`; b.style.display='block';
+      // se podría hacer por cocina seleccionada; aquí mostramos Italiana por simplicidad
+      const c='ITALIANA';
+      const r = await fetch(`/delivery/promotions/status?cuisine=${encodeURIComponent(c)}`,{cache:'no-store'});
+      const p = await r.json().catch(()=>null);
+      const box = document.getElementById('repaPromoBanner');
+      if(!p || !p.active){ box.style.display='none'; return; }
+      box.innerHTML = (p.type==='DESCUENTO') ? `🔥 Promoción activa: <b>${Math.round((p.percent||0)*100)}% OFF</b> en ${p.cuisine}`
+                                             : `🔥 Promoción activa: <b>2x1</b> en <b>${p.product}</b> (${p.cuisine})`;
+      box.style.display='block';
     }
+
+    // ====== Cambios de cocina ======
+    cuisineEl.addEventListener('change', ()=>{
+      setTitle();
+      // refrescar todo para la cocina seleccionada
+      refreshState(); loadOrders(); loadInvoices();
+      // (ventas no dependen de cocina)
+      if (promoTypeEl.value==='2X1') render2x1Options();
+    });
+
+    // ====== Auto-refresh ======
+    let timer=null;
+    function startAutoRefresh(){
+      if (timer) clearInterval(timer);
+      timer = setInterval(()=>{
+        if (role===ROLE.ADMIN){ loadOrders(); loadInvoices(); refreshState(); loadSales(); }
+        if (role===ROLE.REPA){  loadReadyOrders(); loadRepaPromo(); }
+      }, 4000);
+    }
+
+    // Helper para primera carga admin
+    function refreshAdmin(){ setTitle(); render2x1Options(); refreshState(); loadOrders(); loadInvoices(); loadSales(); }
 </script>
 </body>
 </html>
