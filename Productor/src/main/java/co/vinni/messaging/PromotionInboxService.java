@@ -4,6 +4,7 @@ import co.vinni.model.Promotion;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,21 +12,25 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class PromotionInboxService {
 
-    // Promoción activa por cocina (ITALIANA / ASIATICA)
+    // clave SIEMPRE en mayúsculas: ITALIANA / ASIATICA
     private final Map<String, Promotion> active = new ConcurrentHashMap<>();
 
     @RabbitListener(queues = "promo-queue")
     public void onPromo(Promotion promo) {
-        System.out.println("🎁 Promo recibida: " + promo);
-        if (promo.isActive()) {
-            active.put(promo.getCuisine().toUpperCase(), promo);
+        if (promo == null) return;
+        final String key = (promo.getCuisine() == null ? "" : promo.getCuisine().trim().toUpperCase(Locale.ROOT));
 
+        if (promo.isActive()) {
+            active.put(key, promo);
+            System.out.println("🎁 [Producer] Promo ACTIVADA recibida: " + promo);
         } else {
-            active.remove(promo.getCuisine());
+            active.remove(key);
+            System.out.println("🎁 [Producer] Promo DESACTIVADA recibida: " + promo);
         }
     }
 
     public Optional<Promotion> getActive(String cuisine) {
-        return Optional.ofNullable(active.get(cuisine == null ? null : cuisine.toUpperCase()));
+        final String key = cuisine == null ? "" : cuisine.trim().toUpperCase(Locale.ROOT);
+        return Optional.ofNullable(active.get(key));
     }
 }

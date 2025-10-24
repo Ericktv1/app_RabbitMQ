@@ -4,10 +4,10 @@ import co.vinni.messaging.PromotionInboxRepaService;
 import co.vinni.model.Promotion;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.Collection;
 
 @RestController
-@RequestMapping("/delivery/promotions")
+@RequestMapping("/delivery")
 public class DeliveryPromoController {
 
     private final PromotionInboxRepaService inbox;
@@ -16,11 +16,9 @@ public class DeliveryPromoController {
         this.inbox = inbox;
     }
 
-    // GET /delivery/promotions/status?cuisine=ITALIANA|ASIATICA
-    @GetMapping("/status")
-    public Object status(@RequestParam("cuisine") String cuisine) {
-        return inbox.getActive(cuisine)
-                .<Object>map(p -> p)
-                .orElse(Map.of("active", false, "cuisine", cuisine.toUpperCase()));
+    // ✅ el repartidor obtiene TODAS las promos activas
+    @GetMapping("/promotions/active")
+    public Collection<Promotion> listActive() {
+        return inbox.getAllActive();
     }
 }
