@@ -35,6 +35,8 @@
         .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--border) }
         .alert { padding:10px 12px; border-radius:10px; margin-bottom:12px }
         .alert.info { background:rgba(106,164,255,.15); border:1px solid rgba(106,164,255,.35) }
+
+        /* Selects azules */
         select {
           appearance: none;
           background-color: #0d1335;
@@ -49,8 +51,7 @@
           background-color: #11183a;
           color: var(--text);
         }
-        select option:hover,
-        select option:checked {
+        select option:hover, select option:checked {
           background-color: #243b7a;
           color: #ffffff;
         }
@@ -73,7 +74,7 @@
         </div>
     </header>
 
-    <!-- PROMOCIONES -->
+    <!-- PROMOCIONES (ADMIN) -->
     <section id="secPromos" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
@@ -99,7 +100,7 @@
         </div>
     </section>
 
-    <!-- PEDIDOS -->
+    <!-- PEDIDOS (ADMIN) -->
     <section id="secOrders" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar">
@@ -135,7 +136,7 @@
     <section id="secDelivery" class="card" style="display:none">
         <div class="panel">
             <div class="toolbar"><h1>🛵 Repartidor — Pedidos para entregar</h1><button id="refreshDelivery" class="btn">Actualizar</button></div>
-            <div id="deliveryPromoBanner" class="alert info" style="display:none; margin-bottom:10px"></div>
+            <div id="repaPromoBanner" class="alert info" style="display:none"></div>
             <table><thead><tr><th>ID</th><th>Cliente</th><th>Cocina</th><th>Items</th><th class="right">Total</th><th>Cobro</th></tr></thead>
                 <tbody id="tbDelivery"></tbody></table>
         </div>
@@ -143,22 +144,26 @@
 </div>
 
 <script>
+    /* ===== Utils y estado ===== */
     const fmtCOP = n => Number(n).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
     const ROLE = {ADMIN:'admin', REPA:'repartidor'};
     let role=null, user=null;
-
     const cuisineEl = document.getElementById('cuisine');
-    const promoTypeEl = document.getElementById('promoType');
-    const product2x1El = document.getElementById('product2x1');
+    function getCuisine(){ return cuisineEl.value; }
+    function setTitle(){ document.getElementById('titleCuisine').textContent = (getCuisine()==='ASIATICA'?'Cocina Asiática':'Cocina Italiana'); }
 
-    // ==== LOGIN ====
+    /* ===== Login ===== */
     document.getElementById('btnLogin').onclick = ()=>{
       const u = prompt('Usuario (admin/repartidor):')?.trim().toLowerCase();
       if(!u) return;
       const p = prompt('Contraseña:');
       if((u==='admin'&&p==='123')||(u==='repartidor'&&p==='456')){
-        role=u==='admin'?ROLE.ADMIN:ROLE.REPA; user=u; setRole(role);
-      } else alert('Credenciales inválidas');
+        role = (u==='admin')?ROLE.ADMIN:ROLE.REPA;
+        user = u;
+        setRole(role);
+      } else {
+        alert('Credenciales inválidas');
+      }
     };
     document.getElementById('btnLogout').onclick = ()=>location.reload();
 
@@ -167,20 +172,27 @@
       document.getElementById('user').textContent=user||'—';
       document.getElementById('btnLogin').style.display='none';
       document.getElementById('btnLogout').style.display='inline-block';
-      document.getElementById('secPromos').style.display = (r===ROLE.ADMIN)?'block':'none';
-      document.getElementById('secOrders').style.display = (r===ROLE.ADMIN)?'block':'none';
-      document.getElementById('secInvoices').style.display = (r===ROLE.ADMIN)?'block':'none';
-      document.getElementById('secSales').style.display = (r===ROLE.ADMIN)?'block':'none';
-      document.getElementById('secDelivery').style.display = (r===ROLE.REPA)?'block':'none';
-      if(r===ROLE.ADMIN){ refreshAdmin(); }
-      if(r===ROLE.REPA){ loadReadyOrders(); refreshDeliveryBanner(); }
+
+      const isAdmin = r===ROLE.ADMIN;
+      document.getElementById('secPromos').style.display = isAdmin?'block':'none';
+      document.getElementById('secOrders').style.display = isAdmin?'block':'none';
+      document.getElementById('secInvoices').style.display = isAdmin?'block':'none';
+      document.getElementById('secSales').style.display = isAdmin?'block':'none';
+      document.getElementById('secDelivery').style.display = (!isAdmin)?'block':'none';
+
+      if(isAdmin){ refreshAdmin(); }
+      else { loadReadyOrders(); loadRepaPromo(); }
+
       startAutoRefresh();
     }
 
-    // ==== PROMOS ====
-    const MENU = { ITALIANA: ["Pasta","Pizza","Tiramisu"], ASIATICA: ["Ramen","Sushi","Bao"] };
+    /* ===== PROMOS (Admin) ===== */
+    const MENU = { ITALIANA:["Pasta","Pizza","Tiramisu"], ASIATICA:["Ramen","Sushi","Bao"] };
+    const promoTypeEl = document.getElementById('promoType');
+    const product2x1El = document.getElementById('product2x1');
+
     function render2x1Options(){
-      const items = MENU[cuisineEl.value]||[];
+      const items = MENU[getCuisine()]||[];
       product2x1El.innerHTML = '<option value="" disabled selected>Selecciona un producto</option>' +
         items.map(i=>`<option value="${i}">${i}</option>`).join('');
     }
@@ -189,70 +201,221 @@
       product2x1El.style.display = show?'inline-block':'none';
       if(show) render2x1Options();
     });
+
     document.getElementById('btnActivate').onclick = async ()=>{
-      const c = cuisineEl.value;
-      let url = (promoTypeEl.value==='DESCUENTO')
+      const c = getCuisine();
+      const url = (promoTypeEl.value==='DESCUENTO')
         ? `/promotions/${c}/activate/discount20`
         : `/promotions/${c}/activate/twoforone?product=${encodeURIComponent(product2x1El.value||'')}`;
-      await fetch(url,{method:'POST', cache:'no-store'});
+      const r = await fetch(url,{method:'POST', cache:'no-store'});
+      const data = await r.json().catch(()=>({message:'OK'}));
+      document.getElementById('promoMsg').textContent = data.message || 'OK';
       refreshState();
     };
     document.getElementById('btnDeactivate').onclick = async ()=>{
-      const c = cuisineEl.value;
-      await fetch(`/promotions/${c}/deactivate`,{method:'POST', cache:'no-store'});
+      const c = getCuisine();
+      const r = await fetch(`/promotions/${c}/deactivate`,{method:'POST', cache:'no-store'});
+      const data = await r.json().catch(()=>({message:'OK'}));
+      document.getElementById('promoMsg').textContent = data.message || 'OK';
       refreshState();
     };
+
     async function refreshState(){
-      const r = await fetch(`/promotions/status?cuisine=${encodeURIComponent(cuisineEl.value)}`,{cache:'no-store'});
+      const r = await fetch(`/promotions/status?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
       const p = await r.json().catch(()=>null);
       const el = document.getElementById('promoState');
-      el.textContent = (!p||!p.active)?'Inactiva':
-        (p.type==='DESCUENTO'?`ACTIVA — ${Math.round((p.percent||0)*100)}% OFF (${p.cuisine})`
-                             :`ACTIVA — 2x1 en ${p.product} (${p.cuisine})`);
+      if(!p || !p.active){ el.textContent='Inactiva'; return; }
+      el.textContent = (p.type==='DESCUENTO')
+        ? `ACTIVA — ${Math.round((p.percent||0)*100)}% OFF (${p.cuisine})`
+        : `ACTIVA — 2x1 en ${p.product} (${p.cuisine})`;
     }
 
-    // ==== PEDIDOS / FACTURAS / VENTAS igual que antes ====
-    async function loadOrders(){ /* ... tu código original ... */ }
-    async function loadInvoices(){ /* ... tu código original ... */ }
-    async function loadSales(){ /* ... tu código original ... */ }
+    /* ===== Pedidos (Admin) ===== */
+    document.getElementById('refreshOrders').onclick = loadOrders;
 
-    // ==== REPARTIDOR ====
-    async function loadReadyOrders(){ /* igual que antes */ }
-    async function markPaid(id,paid){ /* igual que antes */ }
+    async function loadOrders(){
+      const res = await fetch(`/orders/pending?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
+      const data = await res.json().catch(()=>[]);
+      const tb = document.getElementById('tbOrders'); tb.innerHTML='';
 
-    // ==== 🔔 NUEVO: Banner con todas las promociones activas ====
-    const CUISINE_NAME = c => (String(c||'').toUpperCase()==='ASIATICA'?'ASIÁTICA':'ITALIANA');
-
-    function buildPromoChip(p){
-      if (!p || !p.active) return '';
-      if (p.type === 'DESCUENTO')
-        return `<span class="pill" style="margin-right:6px">${Math.round((p.percent||0)*100)}% OFF · ${CUISINE_NAME(p.cuisine)}</span>`;
-      if (p.type === '2X1')
-        return `<span class="pill" style="margin-right:6px">2x1 ${p.product||''} · ${CUISINE_NAME(p.cuisine)}</span>`;
-      return `<span class="pill" style="margin-right:6px">${p.type||''} · ${CUISINE_NAME(p.cuisine)}</span>`;
-    }
-
-    async function refreshDeliveryBanner(){
-      const box = document.getElementById('deliveryPromoBanner');
-      const list = await fetch('/delivery/promotions/active', { cache: 'no-store' })
-        .then(r=>r.json()).catch(()=>[]);
-      if (!Array.isArray(list) || list.length===0){
-        box.style.display='none'; box.innerHTML=''; return;
+      if(!Array.isArray(data) || data.length===0){
+        tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px">No hay pedidos pendientes</td></tr>';
+        return;
       }
-      box.style.display='block';
-      box.innerHTML = '🔥 Promociones activas: ' + list.map(buildPromoChip).join(' ');
+      data.forEach(o=>{
+        tb.innerHTML += `
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.customerName}</td>
+            <td><span class="pill">${o.cuisine||'-'}</span></td>
+            <td>${(o.items||[]).join(', ')}</td>
+            <td class="right">${fmtCOP(o.total)}</td>
+            <td><span class="badge ${o.status}">${o.status}</span></td>
+            <td class="right">
+              <button class="btn ok" onclick="act('${o.id}',true)">Aceptar</button>
+              <button class="btn danger" onclick="act('${o.id}',false)">Denegar</button>
+            </td>
+          </tr>`;
+      });
     }
 
-    // ==== AUTO-REFRESH ====
+    async function act(id, ok){
+      await fetch(`/orders/${id}/${ok?'accept':'deny'}`,{method:'POST', cache:'no-store'});
+      await loadOrders();
+      await loadInvoices();
+    }
+
+    /* ===== Facturas (Admin) ===== */
+    document.getElementById('refreshInvoices').onclick = loadInvoices;
+
+    async function loadInvoices(){
+      const r = await fetch(`/invoices?cuisine=${encodeURIComponent(getCuisine())}`,{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbInvoices'); tb.innerHTML='';
+
+      if(!Array.isArray(data) || data.length===0){
+        tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No hay facturas</td></tr>';
+        return;
+      }
+      data.forEach(i=>{
+        tb.innerHTML += `
+          <tr>
+            <td>${i.orderId}</td>
+            <td>${i.customerName}</td>
+            <td class="right">${fmtCOP(i.subtotal)}</td>
+            <td class="right">${fmtCOP(i.tax)}</td>
+            <td class="right">${fmtCOP(i.total)}</td>
+          </tr>`;
+      });
+    }
+
+    /* ===== Ventas (Admin) ===== */
+    document.getElementById('refreshSales').onclick = loadSales;
+
+    async function loadSales(){
+      const r = await fetch('/sales',{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbSales'); tb.innerHTML='';
+
+      if(!Array.isArray(data) || data.length===0){
+        tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No hay ventas</td></tr>';
+        return;
+      }
+      data.forEach(v=>{
+        tb.innerHTML += `
+          <tr>
+            <td>${v.orderId}</td>
+            <td>${v.customerName||'-'}</td>
+            <td class="right">${fmtCOP(v.total||0)}</td>
+            <td>${v.pagado?'✅':'❌'}</td>
+            <td>${v.repartidor||'-'}</td>
+          </tr>`;
+      });
+    }
+
+    /* ===== Repartidor ===== */
+    document.getElementById('refreshDelivery').onclick = loadReadyOrders;
+
+    async function loadReadyOrders(){
+      const r = await fetch('/delivery/ready',{cache:'no-store'});
+      const data = await r.json().catch(()=>[]);
+      const tb = document.getElementById('tbDelivery'); tb.innerHTML='';
+
+      if(!Array.isArray(data) || data.length===0){
+        tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">No hay pedidos</td></tr>';
+        return;
+      }
+      data.forEach(o=>{
+        tb.innerHTML += `
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.customerName}</td>
+            <td><span class="pill">${o.cuisine||'-'}</span></td>
+            <td>${(o.items||[]).join(', ')}</td>
+            <td class="right">${fmtCOP(o.total)}</td>
+            <td>
+              <button class="btn ok" onclick="markPaid('${o.id}',true)">Pagado</button>
+              <button class="btn danger" onclick="markPaid('${o.id}',false)">No pagado</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    async function markPaid(id, paid){
+      await fetch(`/delivery/${encodeURIComponent(id)}/pay?paid=${paid}&who=${encodeURIComponent(user||'repartidor')}`,{method:'POST', cache:'no-store'});
+      await loadReadyOrders(); // al pagar o no, se refresca y sale de la lista si aplica
+    }
+
+    /* ===== Notificaciones de Promos (Repartidor) ===== */
+    /* Intenta obtener todas; si tu backend solo expone por cocina, hace fallback consultando ambas */
+    async function loadRepaPromo(){
+      const box = document.getElementById('repaPromoBanner');
+
+      // 1) Intento: endpoint que devuelve lista
+      let list = await fetch('/delivery/promotions/active',{cache:'no-store'})
+        .then(r=>r.ok?r.json():null).catch(()=>null);
+
+      // 2) Fallback: preguntar por cada cocina si no hay lista válida
+      if (!Array.isArray(list)){
+        const [it, as] = await Promise.all([
+          fetch('/delivery/promotions/status?cuisine=ITALIANA',{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
+          fetch('/delivery/promotions/status?cuisine=ASIATICA',{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null),
+        ]);
+        list = [it, as].filter(p => p && p.active);
+      }
+
+      if (!list || list.length===0){
+        box.style.display='none';
+        box.innerHTML='';
+        return;
+      }
+
+      const chip = p => {
+        const C = (p.cuisine||'').toUpperCase()==='ASIATICA'?'ASIÁTICA':'ITALIANA';
+        if (p.type==='DESCUENTO') return `<span class="pill" style="margin-right:6px">${Math.round((p.percent||0)*100)}% OFF · ${C}</span>`;
+        if (p.type==='2X1')      return `<span class="pill" style="margin-right:6px">2x1 ${p.product||''} · ${C}</span>`;
+        return `<span class="pill" style="margin-right:6px">${p.type||''} · ${C}</span>`;
+      };
+
+      box.style.display='block';
+      box.innerHTML = '🔥 Promociones activas: ' + list.map(chip).join(' ');
+    }
+
+    /* ===== Cambios de cocina (admin) ===== */
+    cuisineEl.addEventListener('change', ()=>{
+      setTitle();
+      refreshState();   // promo de esa cocina
+      loadOrders();     // pedidos pendientes de esa cocina
+      loadInvoices();   // facturas de esa cocina
+      if (promoTypeEl.value==='2X1') render2x1Options();
+    });
+
+    /* ===== Auto-refresh ===== */
     let timer=null;
     function startAutoRefresh(){
-      if(timer) clearInterval(timer);
-      timer=setInterval(()=>{
-        if(role===ROLE.ADMIN){ loadOrders(); loadInvoices(); refreshState(); loadSales(); }
-        if(role===ROLE.REPA){ loadReadyOrders(); refreshDeliveryBanner(); }
-      },4000);
+      if (timer) clearInterval(timer);
+      timer = setInterval(()=>{
+        if (role===ROLE.ADMIN){
+          loadOrders();
+          loadInvoices();
+          refreshState();
+          loadSales();
+        }
+        if (role===ROLE.REPA){
+          loadReadyOrders();
+          loadRepaPromo();
+        }
+      }, 4000);
     }
-    function refreshAdmin(){ render2x1Options(); refreshState(); loadOrders(); loadInvoices(); loadSales(); }
+
+    function refreshAdmin(){
+      setTitle();
+      render2x1Options();
+      refreshState();
+      loadOrders();
+      loadInvoices();
+      loadSales();
+    }
 </script>
 </body>
 </html>
